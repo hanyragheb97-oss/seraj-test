@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سراجLED - الواجهة الرئيسية</title>
+    
+    <!-- إضافات تطبيق الموبايل (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#070913">
+    
+    <!-- استدعاء ملفات السحابة (Firebase) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        :root {
+            --neon-border: #a855f7;
+            --neon-glow: rgba(168, 85, 247, 0.5); 
+            --bg-dark-1: #070913;
+            --bg-dark-2: #120f29;
+            --card-bg: rgba(19, 17, 44, 0.88);
+            --text-white: #ffffff;        
+        }
+
+        /* تعديل الشاشة لمنع السكرول وجعلها تطبيق أصلي */
+body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
+            color: var(--text-white); 
+            margin: 0; 
+            padding: 0; 
+            user-select: none; 
+            
+            /* استخدمنا dvh عشان يتأقلم مع شريط الموبايل الديناميكي */
+            height: 100dvh; 
+            width: 100vw; 
+            /* سمحنا بالسكرول البسيط بدل القص لو الشاشة صغيرة جداً */
+            overflow-y: auto; 
+            overflow-x: hidden; 
+            overscroll-behavior: none; 
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .header { 
+            background: rgba(19, 17, 44, 0.95); 
+            backdrop-filter: blur(14px); 
+            padding: 10px 15px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            border-bottom: 3px solid var(--neon-border); 
+            box-shadow: 0 0 45px var(--neon-glow), 0 10px 25px rgba(0, 0, 0, 0.7);
+        }
+        
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 36px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+        .brand-siraj {
+            color: #ffffff;
+            text-shadow: 0 0 10px #ffffff, 0 0 20px #ffffff, 0 0 40px var(--neon-border), 0 0 70px var(--neon-border);
+        }
+        .led-l { color: #ff3333; text-shadow: 0 0 10px #ff3333, 0 0 25px #ff3333, 0 0 50px rgba(255, 51, 51, 0.8), 0 0 80px rgba(255, 51, 51, 0.5); }
+        .led-e { color: #00ff66; text-shadow: 0 0 10px #00ff66, 0 0 25px #00ff66, 0 0 50px rgba(0, 255, 102, 0.8), 0 0 80px rgba(0, 255, 102, 0.5); }
+        .led-d { color: #00bfff; text-shadow: 0 0 10px #00bfff, 0 0 25px #00bfff, 0 0 50px rgba(0, 191, 255, 0.8), 0 0 80px rgba(0, 191, 255, 0.5); }
+
+  .container { 
+            padding: 15px; 
+            max-width: 800px; 
+            margin: auto; 
+            /* توافق مع الـ dvh وإعطاء حد أدنى للطول عشان الأيقونات متتفعصش */
+            height: calc(100dvh - 75px); 
+            min-height: 550px; 
+            box-sizing: border-box;
+            /* إضافة مساحة تحتية عشان رسالة السحابة متغطيهاش */
+            padding-bottom: 30px; 
+        }
+        
+  .grid { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            /* قللنا ارتفاع المخزن لـ 0.9 وكبرنا باقي الأيقونات لـ 1.1 عشان نوزن الشاشة */
+            grid-template-rows: 0.9fr 1.1fr 1.1fr 1.1fr; 
+            gap: 15px; 
+            height: 100%; /* ملء الحاوية بالكامل */
+        }
+        
+        /* تنسيق المربعات ذات نفسها */
+        .grid-item { 
+            background: var(--card-bg); 
+            border-radius: 18px; 
+            overflow: hidden; 
+            box-shadow: 0 0 15px var(--neon-glow); 
+            text-decoration: none; 
+            color: var(--text-white); 
+            display: flex; 
+            transition: all 0.2s ease; 
+            border: 2px solid var(--neon-border); 
+            cursor: pointer; 
+            position: relative; 
+            height: 100%; 
+            width: 100%;
+        }
+        
+        .grid-item:active { 
+            transform: scale(0.96); 
+            box-shadow: 0 0 35px rgba(236, 72, 153, 0.9); 
+            border-color: #ec4899;
+            filter: brightness(1.2); 
+        }
+        
+        .grid-item.full-width { 
+            grid-column: span 2; 
+            height: 100%; 
+        }
+
+        /* تنسيق الصور عشان تملا المربع بالكامل */
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover; 
+            position: absolute; 
+            top: 0;
+            left: 0;
+            z-index: 1; 
+            border: none; 
+        }
+
+        /* تنسيق النصوص (لون أبيض مع ظل أسود قوي لكل الأيقونات) */
+        .title { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0;
+            width: 100%;
+            text-align: center; 
+            font-weight: bold; 
+            font-size: 19px; 
+            padding: 15px 0 10px 0; 
+            z-index: 2; 
+            
+            /* اللون الأبيض والظل الأسود */
+            color: #ffffff; 
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 1), -2px -2px 4px rgba(0, 0, 0, 1), 0 0 15px rgba(0, 0, 0, 0.9);
+            
+            /* التدرج الأسود خلف الكلمة */
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
+        }
+        
+        .grid-item.full-width .title { 
+            font-size: 24px; 
+            padding: 20px 0 12px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="brand-container">
+            <span class="brand-siraj">سراج</span>
+            <span>
+                <span class="led-l">L</span><span class="led-e">E</span><span class="led-d">D</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- المخزن (عريض) -->
+            <a href="store.html" class="grid-item full-width">
+                <img src="store.jpg" alt="مخزن المنتجات">
+                <div class="title">مخزن المنتجات</div>
+            </a>
+            
+            <!-- الشراء -->
+            <a href="purchases.html" class="grid-item">
+                <img src="buy.jpg" alt="شراء">
+                <div class="title">شراء</div>
+            </a>
+            
+            <!-- البيع -->
+            <a href="sales.html" class="grid-item">
+                <img src="sales.jpg" alt="بيع">
+                <div class="title">بيع</div>
+            </a>
+            
+            <!-- الموردين -->
+            <a href="suppliers.html" class="grid-item">
+                <img src="suppliers.jpg" alt="الموردين">
+                <div class="title">الموردين</div>
+            </a>
+            
+            <!-- العملاء -->
+            <a href="customers.html" class="grid-item">
+                <img src="customers.jpg" alt="العملاء">
+                <div class="title">العملاء</div>
+            </a>
+            
+            <!-- الخزنة -->
+            <a href="treasury.html" class="grid-item">
+                <img src="safe.jpg" alt="الخزنة">
+                <div class="title">الخزنة</div>
+            </a>
+            
+            <!-- المحاسب الذكي -->
+            <!-- لاحظ تم مسح كلاس smart-title عشان ياخد نفس اللون الأبيض -->
+            <a href="smart_accountant.html" class="grid-item">
+                <img src="ai.jpg" alt="المحاسب الذكي">
+                <div class="title">المحاسب الذكي</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- استدعاء ملف قاعدة البيانات -->
+    <script src="db.js"></script>
+    
+    <script>
+        // تفعيل الألوان الذكية
+        window.onload = () => {
+            if(typeof DB !== 'undefined') {
+                DB.applySavedTheme();
+            }
+        };
+
+        // تفعيل تطبيق الموبايل والعمل بدون إنترنت
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(() => console.log('جاهز للعمل بدون إنترنت'))
+            .catch((err) => console.log('خطأ في تثبيت التطبيق:', err));
+        }
+    </script>
+   <script src="ai_brain.js?v=600"></script>
+</body>
+</html>

@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>فاتورة بيع - سراج LED</title>
+    
+    <!-- إضافات تطبيق الموبايل (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#070913">
+    
+    <!-- استدعاء ملفات السحابة (Firebase) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <style>
+        :root {
+            --neon-border: #a855f7;
+            --neon-glow: rgba(168, 85, 247, 0.4);
+            --bg-dark-1: #070913;
+            --bg-dark-2: #120f29;
+            --card-bg: rgba(19, 17, 44, 0.88);
+            --text-white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
+            color: var(--text-white); 
+            margin: 0; 
+            padding: 0; 
+            user-select: none; 
+            overflow-x: hidden; 
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+        }
+        
+        .header { 
+            background: rgba(19, 17, 44, 0.95); 
+            backdrop-filter: blur(12px); 
+            color: var(--text-white); 
+            padding: 15px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            font-size: 22px; 
+            font-weight: bold; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            border-bottom: 2px solid var(--neon-border);
+            box-shadow: 0 0 25px var(--neon-glow);
+        }
+
+        .header-history-btn {
+            background: rgba(19, 17, 44, 0.8);
+            border: 1px solid var(--neon-border);
+            border-radius: 12px;
+            color: var(--text-white);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            box-shadow: 0 0 12px var(--neon-glow);
+            transition: all 0.2s;
+        }
+        .header-history-btn:active { transform: scale(0.95); background: rgba(168, 85, 247, 0.25); }
+        
+        .sales-container { padding: 15px; max-width: 800px; margin: auto; padding-bottom: 120px;}
+        .search-container { position: relative; margin-bottom: 15px; display: flex; gap: 10px; align-items: center;}
+        
+        .search-input { flex: 1; padding: 14px; border: 2px solid var(--neon-border); border-radius: 16px; font-size: 18px; box-sizing: border-box; background: rgba(19, 17, 44, 0.6); box-shadow: 0 0 15px var(--neon-glow); outline: none; color: var(--text-white); font-weight: bold; transition: all 0.3s;}
+        .search-input:focus { box-shadow: 0 0 30px var(--neon-glow); background: rgba(19, 17, 44, 0.9); }
+        
+        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
+        .dropdown-item { padding: 12px 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-white); font-weight: bold; font-size: 16px;}
+        .dropdown-item:active { background-color: rgba(168, 85, 247, 0.3); }
+        .stock-badge { background: linear-gradient(135deg, #9333ea, #db2777); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(219, 39, 119, 0.5);}
+        
+        .table-wrapper {
+            max-height: calc(100vh - 250px); 
+            overflow-y: auto; 
+            border-radius: 16px;
+            border: 2px solid var(--neon-border);
+            box-shadow: 0 0 20px var(--neon-glow);
+            background: rgba(19, 17, 44, 0.8);
+            backdrop-filter: blur(10px);
+            margin-bottom: 15px;
+        }
+
+        .table-wrapper table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            text-align: center; 
+            font-size: 16px; 
+            border: none;
+        }
+        
+        .table-wrapper th { 
+            background-color: #1c133a; 
+            padding: 14px 10px; 
+            border-bottom: 2px solid var(--neon-border); 
+            color: var(--text-white); 
+            font-weight: bold; 
+            font-size: 17px; 
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            position: sticky; 
+            top: 0; 
+            z-index: 10;
+        }
+        
+        .table-wrapper td { 
+            padding: 14px 10px; 
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2); 
+            cursor: pointer; 
+            touch-action: pan-y; 
+            color: var(--text-white); 
+            font-weight: bold; 
+            font-size: 16px;
+        }
+        .swipe-row { transition: transform 0.1s ease-out, background 0.2s; background: rgba(19, 17, 44, 0.5); touch-action: pan-y; position: relative; }
+        
+        .bottom-dashboard {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 10px 15px; 
+            background: rgba(19, 17, 44, 0.95);
+            backdrop-filter: blur(10px);
+            border-top: 1px solid var(--neon-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 200;
+            box-shadow: 0 -4px 25px var(--neon-glow);
+            gap: 10px;
+        }
+
+        .dashboard-right { display: flex; align-items: center; gap: 8px; flex: 1; }
+        .dashboard-left { display: flex; align-items: center; gap: 8px; }
+
+        .bottom-back-btn {
+            background: #1d4ed8;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 0 15px;
+            height: 45px; 
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .bottom-back-btn:active { transform: scale(0.95); filter: brightness(1.2); }
+        .bottom-back-btn .arrow { color: white; font-size: 15px; line-height: 1; }
+        .bottom-back-btn .text { color: white; font-size: 10px; font-weight: bold; font-family: sans-serif; letter-spacing: 0.5px; }
+
+        .save-btn { 
+            display: none; 
+            flex: 1; 
+            align-items: center;
+            justify-content: center;
+            background: rgba(7, 9, 19, 0.95); 
+            color: var(--text-white); 
+            border: 1px solid var(--neon-border); 
+            height: 45px; 
+            font-size: 18px; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            box-shadow: 0 0 10px var(--neon-glow); 
+            transition: all 0.2s;
+        }
+        .save-btn:active { transform: scale(0.96); box-shadow: 0 0 20px var(--neon-glow); background: rgba(168, 85, 247, 0.1); }
+
+        .floating-total { 
+            display: none; 
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px; 
+            font-weight: bold; 
+            color: var(--text-white); 
+            padding: 4px 15px; 
+            background: rgba(19, 17, 44, 0.85); 
+            border: 1px solid var(--neon-border); 
+            border-radius: 12px; 
+            text-align: center; 
+            box-shadow: 0 0 10px var(--neon-glow); 
+            line-height: 1.2;
+            height: 45px; 
+            box-sizing: border-box;
+        }
+        .floating-total span.total-label { font-size: 12px; color: var(--text-white); font-weight: normal; }
+        .floating-total .total-val { color: #ff1a40; text-shadow: 0 0 10px rgba(255, 26, 64, 0.9); font-size: 20px; }
+
+        .fab-container { position: fixed; bottom: 150px; left: 22px; z-index: 200; }
+        .fab-btn { background: rgba(7, 9, 19, 0.95); color: var(--text-white); border: 2px solid var(--neon-border); border-radius: 50%; width: 60px; height: 60px; font-size: 33px; display: flex; justify-content: center; align-items: center; box-shadow: 0 0 20px var(--neon-glow); cursor: pointer;}
+        .fab-btn:active { filter: brightness(1.3); }
+
+        .fab-menu { position: absolute; bottom: 100%; margin-bottom: 12px; left: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 14px; display: none; flex-direction: column; width: 170px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); z-index: 250; overflow: hidden;}
+        .fab-menu button { padding: 14px; border: none; background: none; text-align: right; width: 100%; cursor: pointer; font-size: 16px; font-weight: bold; border-bottom: 1px solid rgba(168, 85, 247, 0.2); color: var(--text-white); transition: background 0.2s;}
+        .fab-menu button:active { background-color: rgba(168, 85, 247, 0.3); }
+
+        .bottom-print-bar { position: fixed; bottom: 70px; left: 0; right: 0; padding: 12px 20px; display: none; justify-content: center; align-items: center; z-index: 150; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .bottom-print-btn { background: #10b981; color: white; border: 2px solid #059669; border-radius: 20px; padding: 12px 30px; font-size: 18px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); transition: all 0.2s;}
+        .bottom-print-btn:active { transform: scale(0.95); }
+        
+        .toast-msg { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(37, 99, 235, 0.95); color: white; padding: 12px 25px; border-radius: 25px; z-index: 9999; display: none; font-size: 16px; font-weight: bold; box-shadow: 0 0 20px rgba(37, 99, 235, 0.6);}
+        .toast-warning { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(220, 38, 38, 0.95); color: white; padding: 12px 20px; border-radius: 12px; z-index: 9999; display: none; font-size: 15px; font-weight: bold; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 0 25px rgba(220, 38, 38, 0.6); border-right: 5px solid #991b1b;}
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(5, 7, 15, 0.85); display: none; justify-content: center; align-items: center; z-index: 300; backdrop-filter: blur(8px);}
+        .compact-modal { background: rgba(19, 17, 44, 0.95); padding: 25px; border-radius: 24px; width: 92%; max-width: 440px; box-shadow: 0 0 45px var(--neon-glow); max-height: 92vh; overflow-y: auto; border: 2px solid var(--neon-border);}
+        .compact-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(168, 85, 247, 0.3); padding-bottom: 15px; margin-bottom: 20px;}
+        .compact-header h3 { margin: 0; font-size: 20px; color: var(--text-white); text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);}
+        
+        .details-toggle-btn { background: rgba(19, 17, 44, 0.7); color: var(--text-white); border: 2px dashed var(--neon-border); width: 100%; padding: 10px; border-radius: 12px; font-weight: bold; font-size: 15px; cursor: pointer; margin-bottom: 15px; box-shadow: 0 0 10px var(--neon-glow); transition: all 0.2s;}
+        .hidden-details { display: none; background: rgba(19, 17, 44, 0.85); padding: 10px; border-radius: 12px; margin-bottom: 15px; border: 1px solid rgba(168, 85, 247, 0.4);}
+        .batches-slider { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory;}
+        .batch-card { min-width: 140px; background: rgba(25, 22, 56, 0.9); border: 1px solid var(--neon-border); border-radius: 10px; padding: 10px; font-size: 13px; text-align: right; line-height: 1.6; flex-shrink: 0; color: var(--text-white); font-weight: bold;}
+        
+        .compact-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;}
+        .compact-row label { font-size: 17px; font-weight: bold; color: var(--text-white); flex: 1; text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);}
+        .compact-row input, .compact-row select, .compact-row textarea { width: 170px; padding: 10px; font-size: 18px; text-align: center; border: 2px solid var(--neon-border); border-radius: 14px; font-weight: bold; outline: none; background: rgba(19, 17, 44, 0.6); color: var(--text-white); box-shadow: 0 0 10px var(--neon-glow);}
+        
+        .color-red-val { color: #ff1a40 !important; font-weight: bold; text-shadow: 0 0 12px rgba(255, 26, 64, 0.9), 0 0 25px rgba(255, 26, 64, 0.5); }
+        .color-green-val { color: #00ff66 !important; font-weight: bold; text-shadow: 0 0 12px rgba(0, 255, 102, 0.9), 0 0 25px rgba(0, 255, 102, 0.5); }
+
+        .compact-customer { margin-top: 18px; border-top: 2px solid rgba(168, 85, 247, 0.3); padding-top: 18px; display: flex; flex-direction: column; gap: 8px;}
+        .compact-customer label { font-size: 18px; font-weight: bold; color: var(--text-white); text-align: right; text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);}
+        .compact-customer input { width: 100%; padding: 14px; border: 2px solid var(--neon-border); border-radius: 16px; text-align: right; font-size: 19px; font-weight: bold; outline: none; background: rgba(19, 17, 44, 0.6); box-sizing: border-box; color: var(--text-white); box-shadow: 0 0 15px var(--neon-glow);}
+        
+        .compact-btns { display: flex; gap: 15px; margin-top: 25px; border-top: 2px solid rgba(168, 85, 247, 0.3); padding-top: 20px;}
+        .compact-btns button { flex: 1; border: none; font-size: 20px; font-weight: bold; cursor: pointer; padding: 14px; border-radius: 16px; box-shadow: 0 0 15px rgba(0,0,0,0.3); transition: all 0.2s;}
+        .btn-save-ai { background: rgba(7, 9, 19, 0.95) !important; border: 2px solid var(--neon-border) !important; color: var(--text-white) !important; box-shadow: 0 0 15px var(--neon-glow) !important;}
+        .btn-close-ai { background: rgba(19, 17, 44, 0.8) !important; border: 2px solid var(--neon-border) !important; color: var(--text-white) !important; box-shadow: 0 0 12px var(--neon-glow) !important;}
+
+        #liveCustomerBalance { font-size: 16px; font-weight: bold; text-align: center; margin-top: 10px; min-height: 20px; }
+        
+        #printReceiptArea { display: none; }
+        @media print {
+            @page { margin: 0; size: 80mm auto; }
+            body { margin: 0; padding: 0; background: #fff; }
+            body > *:not(#printReceiptArea) { display: none !important; }
+            
+            #printReceiptArea { 
+                display: block !important; 
+                width: 72mm; 
+                margin: 0 auto; 
+                padding: 0; 
+                font-family: 'Segoe UI', Tahoma, Arial, sans-serif; 
+                direction: rtl; 
+                color: #000; 
+            }
+            
+            .print-header { font-size: 20px; font-weight: bold; text-align: center; margin-bottom: 5px; }
+            .print-meta-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: normal; border-bottom: 1px dashed #000; padding-bottom: 4px; margin-bottom: 4px; }
+            .print-customer { font-size: 13px; font-weight: normal; margin-bottom: 6px; text-align: right; }
+            
+            .print-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; font-size: 13px; font-weight: normal; }
+            .print-table th { border-bottom: 1px solid #000; border-top: 1px solid #000; padding: 4px 2px; text-align: center; font-weight: bold; }
+            .print-table td { padding: 4px 2px; border-bottom: 1px dashed #000; text-align: center; }
+            .print-table th:first-child, .print-table td:first-child { text-align: right; width: 45%; }
+            
+            .print-totals { border-top: 1px solid #000; padding-top: 6px; text-align: left; font-size: 14px; font-weight: bold; line-height: 1.5; }
+            .print-totals span.label { float: right; font-weight: normal; }
+            
+            .print-footer { text-align: center; font-size: 13px; font-weight: normal; margin-top: 10px; border-top: 1px dashed #000; padding-top: 8px; }
+        }
+    </style>
+</head>
+<body onclick="hideFabMenu(); closeAllMenus(event);">
+
+    <div class="header" id="mainHeader">
+        <div style="width: 40px;"></div>
+        <span id="pageTitleText" style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);">فاتورة بيع</span>
+        <button class="header-history-btn" onclick="window.location.href='history.html'">
+            <span style="font-size: 20px;">📋</span> السجل
+        </button>
+    </div>
+
+    <div id="exitToast" class="toast-msg">الفاتورة مفتوحة!</div>
+    <div id="stockWarningToast" class="toast-warning"></div>
+
+    <div class="sales-container">
+        <div class="search-container">
+            <input type="text" id="productSearch" class="search-input" placeholder="ابحث عن منتج بالاسم..." oninput="searchProducts()" onclick="this.select()">
+            <div id="productResults" class="dropdown-list"></div>
+        </div>
+
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="text-align: right;">الصنف</th>
+                        <th>السعر</th>
+                        <th>العدد</th>
+                        <th>الإجمالي</th>
+                    </tr>
+                </thead>
+                <tbody id="invoiceItems"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="fab-container">
+        <button class="fab-btn" onclick="toggleFabMenu(event)">&#8801;</button>
+        <div class="fab-menu" id="fabMenu">
+            <button onclick="changeInvoiceType('sales', 'فاتورة بيع', '#ffffff')">فاتورة بيع</button>
+            <button onclick="changeInvoiceType('return', 'فاتورة مرتجع', '#ff1a40')">فاتورة مرتجع</button>
+            <button onclick="changeInvoiceType('quotation', 'عرض سعر', '#00ff66')">عرض سعر</button>
+        </div>
+    </div>
+
+    <div class="bottom-dashboard" id="bottomActionBar" onclick="event.stopPropagation()">
+        
+        <div class="dashboard-right">
+            <button class="bottom-back-btn" onclick="handleExit()">
+                <span class="arrow">⬅</span>
+                <span class="text">BACK</span>
+            </button>
+            <button id="mainSaveBtn" class="save-btn" onclick="openSaveModal()">حفظ الفاتورة</button>
+        </div>
+
+        <div class="dashboard-left">
+            <div id="totalDisplayDiv" class="floating-total">
+                <span class="total-label">الإجمالي</span>
+                <span class="total-val" id="mainTotal">0.00</span>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="bottom-print-bar" id="bottomPrintBar" onclick="event.stopPropagation()">
+        <div style="position: relative;">
+            <button class="bottom-print-btn" onclick="togglePrintMenu(event)">🖨️ طباعة / تصدير ▼</button>
+            <div class="print-dropdown-menu" id="printDropdownMenu" style="bottom: 50px;">
+                <div class="print-dropdown-item" onclick="printLastInvoice()">🖨️ طباعة حرارية (80mm)</div>
+                <div class="print-dropdown-item" onclick="exportLastInvoiceToExcel()">📊 تصدير Excel</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal-overlay" id="editModalOverlay" onclick="closeModals()">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3 id="editItemName">تعديل الصنف</h3></div>
+            <button class="details-toggle-btn" onclick="toggleDetails()">+ عرض تفاصيل المخزن</button>
+            <div class="hidden-details" id="hiddenDetailsBox">
+                <div class="batches-slider" id="editBatchesSlider"></div>
+                <div style="text-align: center; margin-top: 8px; font-weight: bold; color: var(--text-white);">
+                    إجمالي الرصيد بالمخزن: <span id="editTotalStock">0</span>
+                </div>
+            </div>
+            <div class="compact-row"><label>سعر البيع:</label><input type="number" id="editPrice" onclick="this.select()"></div>
+            <div class="compact-row"><label>الكمية بالفاتورة:</label><input type="number" id="editQty" onclick="this.select()"></div>
+            <input type="hidden" id="editItemIndex">
+            <div class="compact-btns">
+                <button class="btn-close-ai" onclick="closeModals()">إغلاق</button>
+                <button class="btn-save-ai" onclick="saveItemEdit()">تحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="saveModalOverlay" onclick="closeModals()">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header">
+                <span class="badge" id="modalInvoiceTypeBadge" style="font-weight:bold;">فاتورة بيع</span>
+                <span style="color:#e879f9; font-size:15px; font-weight:bold;">تأكيد وحفظ الفاتورة</span>
+            </div>
+            
+            <div class="compact-row"><label style="color:#ff1a40;">خصم على الفاتورة</label><input type="number" id="modalDiscount" value="0" onclick="this.select()" oninput="calculateModalTotals()"></div>
+            <div class="compact-row"><label>الصافي المطلوب</label><input type="number" id="modalTotal" class="color-red-val" value="0" readonly></div>
+            <div class="compact-row"><label style="color:#00ff66;">المبلغ المدفوع</label><input type="number" id="modalPaid" class="color-green-val" value="0" onclick="this.select()" oninput="calculateModalTotals()"></div>
+            <div class="compact-row"><label>المتبقي (الآجل)</label><input type="number" id="modalRemaining" value="0" readonly dir="ltr"></div>
+            
+            <div class="compact-row">
+                <select id="modalVaultSelect" style="width: 170px;">
+                    <option value="main">الخزينة الرئيسية (كاش)</option>
+                    <option value="insta">إنستا (InstaPay)</option>
+                    <option value="wallet">المحفظة الإلكترونية</option>
+                </select>
+                <textarea id="modalNotes" placeholder="ملاحظات..." style="width: 170px; height: 38px; padding: 6px; font-size: 15px; text-align: right; border: 2px solid var(--neon-border); border-radius: 14px; font-weight: bold; outline: none; background: rgba(19, 17, 44, 0.6); color: var(--text-white); resize: none; box-shadow: 0 0 10px var(--neon-glow);"></textarea>
+            </div>
+
+            <div class="compact-row" style="justify-content: center; background: rgba(19, 17, 44, 0.6); padding: 8px; border-radius: 12px; border: 1px dashed var(--neon-border); margin-bottom: 15px; box-shadow: 0 0 10px var(--neon-glow);">
+                <label style="flex: none; margin-left: 8px; color: var(--text-white); font-size: 14px;">التاريخ:</label>
+                <input type="date" id="modalDate" style="width: 150px; padding: 4px; font-size: 14px; background: rgba(19, 17, 44, 0.4); color: var(--text-white);">
+            </div>
+            
+            <div class="compact-customer" style="position:relative;">
+                <label>اسم العميل</label>
+                <input type="text" id="customerSearchInput" placeholder="ادخل اسم العميل" oninput="handleCustomerInput()" onclick="this.select()">
+                <div id="customerResults" class="dropdown-list" style="bottom:100%; top:auto;"></div>
+            </div>
+            <div id="liveCustomerBalance"></div>
+            
+            <div class="compact-btns">
+                <button class="btn-close-ai" onclick="closeModals()">إغلاق</button>
+                <button class="btn-save-ai" onclick="confirmSave()">حفظ</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="printReceiptArea"></div>
+
+    <script src="db.js"></script>
+    <script>
+        function applyFallbackTheme() {
+            if (typeof DB !== 'undefined' && DB.applySavedTheme) {
+                DB.applySavedTheme();
+            } else {
+                let b = localStorage.getItem('seraj_theme_border');
+                let g = localStorage.getItem('seraj_theme_glow');
+                if(b && g) {
+                    document.documentElement.style.setProperty('--neon-border', b);
+                    document.documentElement.style.setProperty('--neon-glow', g);
+                }
+            }
+        }
+
+        let productsDB = [];
+        let customersDB = [];
+        let invoicesDB = [];
+        
+        function loadDB() {
+            if(typeof DB !== 'undefined') {
+                productsDB = DB.getProducts() || [];
+                customersDB = DB.getCustomers() || [];
+                invoicesDB = DB.getSalesInvoices() || [];
+            }
+        }
+
+        let invoice = JSON.parse(localStorage.getItem('seraj_draft_invoice')) || [];
+        let currentInvoiceType = 'all';
+        let lastSavedInvoice = null; 
+
+        function saveDraft() { localStorage.setItem('seraj_draft_invoice', JSON.stringify(invoice)); }
+
+        window.onload = () => {
+            applyFallbackTheme();
+            loadDB();
+            let draft = JSON.parse(localStorage.getItem('seraj_draft_invoice')) || [];
+            invoice = Array.isArray(draft) ? draft : [];
+            renderTable();
+        };
+
+        function handleExit() { window.location.href = 'index.html'; }
+
+        function toggleFabMenu(e) { e.stopPropagation(); const menu = document.getElementById('fabMenu'); menu.style.display = menu.style.display === 'flex' ? 'none' : 'flex'; }
+        function hideFabMenu() { document.getElementById('fabMenu').style.display = 'none'; }
+        
+        function changeInvoiceType(type, title, headerColor) {
+            currentInvoiceType = type === 'sales' ? 'all' : type;
+            let titleEl = document.getElementById('pageTitleText');
+            titleEl.innerText = title;
+            titleEl.style.color = headerColor;
+            titleEl.style.textShadow = `0 0 12px ${headerColor}`;
+
+            let badgeEl = document.getElementById('modalInvoiceTypeBadge');
+            badgeEl.innerText = title;
+            badgeEl.style.color = headerColor;
+            hideFabMenu();
+        }
+
+        let stockWarningTimer;
+        function showStockWarning(name, stock) {
+            const toast = document.getElementById('stockWarningToast');
+            toast.innerText = `تنبيه: "${name}" رصيده (${stock}) غير كافٍ! سيتم البيع بالسالب.`;
+            toast.style.display = 'block';
+            clearTimeout(stockWarningTimer);
+            stockWarningTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
+        }
+
+        function searchProducts() {
+            loadDB(); // التحديث اللحظي للأصناف
+            const rawQuery = document.getElementById('productSearch').value.trim().toLowerCase();
+            const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
+            const resultsDiv = document.getElementById('productResults');
+            resultsDiv.innerHTML = '';
+            
+            if(searchWords.length === 0) { resultsDiv.style.display = 'none'; return; }
+
+            let filtered = productsDB.map(p => {
+                let pName = String(p.name || '').toLowerCase();
+                let score = 0;
+                
+                searchWords.forEach(w => { 
+                    if (pName.includes(w) || String(p.barcode || '').includes(w)) score += 1; 
+                });
+                
+                if (score > 0 && pName.startsWith(searchWords[0])) score += 2;
+                
+                return { product: p, score: score };
+            }).filter(item => item.score > 0);
+
+            filtered.sort((a, b) => b.score - a.score);
+
+            if(filtered.length > 0) {
+                resultsDiv.style.display = 'block';
+                filtered.forEach(item => {
+                    let p = item.product;
+                    let totalStock = (p.lots && p.lots.length > 0) ? p.lots.reduce((sum, l) => sum + (l.stock || 0), 0) : (p.stock || 0);
+                    let dispPrice = (p.lots && p.lots.length > 0) ? p.lots[p.lots.length - 1].price : (p.price || 0);
+                    
+                    const div = document.createElement('div'); div.className = 'dropdown-item';
+                    div.innerHTML = `<div><strong>${p.name}</strong><br><span style="color:var(--neon-border);">سعر: ${dispPrice} جنيه</span></div> <span class="stock-badge">${totalStock}</span>`;
+                    div.onmousedown = (e) => { e.preventDefault(); addProduct(p); };
+                    resultsDiv.appendChild(div);
+                });
+            } else {
+                resultsDiv.style.display = 'none';
+            }
+        }
+
+        function checkAndRunAutoUnpackForSale(p) {
+            if (!p || !p.autoParentId) return;
+            let currentStock = (p.lots && p.lots.length > 0) ? p.lots.reduce((sum, l) => sum + (parseFloat(l.stock) || 0), 0) : (parseFloat(p.stock) || 0);
+            
+            if (currentStock < 0) {
+                let parentP = productsDB.find(x => String(x.id) === String(p.autoParentId));
+                if (!parentP) return;
+
+                let rate = p.autoConversionRate || 50;
+                let deficitUnits = Math.abs(currentStock);
+                let cartonsNeeded = Math.ceil(deficitUnits / rate);
+
+                let todayStr = new Date().toISOString().split('T')[0];
+                let parentPurchasePrice = parentP.lots && parentP.lots.length > 0 ? parentP.lots[parentP.lots.length - 1].purchasePrice : 0;
+                let unitPurchaseCost = parentPurchasePrice > 0 ? (parentPurchasePrice / rate) : 0;
+                let currentSell = (p.lots && p.lots.length > 0) ? p.lots[p.lots.length - 1].price : (parseFloat(p.price) || 0);
+
+                if (!parentP.lots) parentP.lots = [];
+                parentP.lots.push({
+                    supplier: `سحب تلقائي (فك كرتونة) لصالح : ${p.name}`,
+                    stock: -cartonsNeeded,
+                    purchasePrice: parentPurchasePrice,
+                    price: parentP.lots.length > 0 ? parentP.lots[parentP.lots.length - 1].price : 0,
+                    date: todayStr
+                });
+
+                let unitsAdded = cartonsNeeded * rate;
+                if (!p.lots) p.lots = [];
+                p.lots.unshift({
+                    supplier: `سحب تلقائي من : ${parentP.name}`,
+                    stock: unitsAdded,
+                    purchasePrice: unitPurchaseCost,
+                    price: currentSell,
+                    date: todayStr
+                });
+            }
+        }
+        
+        function addProduct(product) {
+            const existingIndex = invoice.findIndex(item => item.id === product.id);
+            let totalStock = (product.lots && product.lots.length > 0) ? product.lots.reduce((sum, l) => sum + (l.stock || 0), 0) : (product.stock || 0);
+            let dispPrice = (product.lots && product.lots.length > 0) ? product.lots[product.lots.length - 1].price : (product.price || 0);
+            
+            let newQty = existingIndex > -1 ? invoice[existingIndex].qty + 1 : 1;
+            if (newQty > totalStock) showStockWarning(product.name, totalStock);
+            
+            if(existingIndex > -1) {
+                let updatedItem = invoice.splice(existingIndex, 1)[0];
+                updatedItem.qty = newQty;
+                invoice.unshift(updatedItem); 
+            } else {
+                invoice.unshift({ ...product, price: dispPrice, qty: 1 }); 
+            }
+            
+            saveDraft(); 
+            document.getElementById('productSearch').value = ''; 
+            document.getElementById('productResults').style.display = 'none'; 
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('invoiceItems');
+            tbody.innerHTML = ''; let subTotal = 0;
+            
+            invoice.forEach((item, index) => {
+                let itemPrice = parseFloat(item.price) || 0;
+                let itemQty = parseFloat(item.qty) || 0;
+                let itemTot = itemPrice * itemQty;
+                subTotal += itemTot;
+
+                const tr = document.createElement('tr');
+                tr.className = 'swipe-row';
+                
+                let startX = 0; let currentX = 0; let isDragging = false; let pressTimer = null;
+
+                const onStart = (clientX) => {
+                    startX = clientX; currentX = startX; isDragging = true;
+                    pressTimer = setTimeout(() => {
+                        if (isDragging && Math.abs(currentX - startX) < 10) { isDragging = false; openEditModal(index); }
+                    }, 600);
+                };
+
+                const onMove = (clientX) => {
+                    if (!isDragging) return;
+                    currentX = clientX; let diff = currentX - startX;
+                    if (Math.abs(diff) > 15) {
+                        clearTimeout(pressTimer); tr.style.transform = `translateX(${diff}px)`; tr.style.opacity = `${1 - Math.abs(diff) / 300}`;
+                    }
+                };
+
+                const onEnd = () => {
+                    if (!isDragging) return;
+                    isDragging = false; clearTimeout(pressTimer); let diff = currentX - startX;
+                    if (Math.abs(diff) > 90) {
+                        tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+                        tr.style.transform = `translateX(${diff > 0 ? 100 : -100}%)`; tr.style.opacity = '0';
+                        setTimeout(() => { invoice.splice(index, 1); saveDraft(); renderTable(); }, 250);
+                    } else {
+                        tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                        tr.style.transform = 'translateX(0)'; tr.style.opacity = '1';
+                    }
+                };
+
+                tr.onmousedown = (e) => { onStart(e.clientX); }; tr.onmousemove = (e) => { onMove(e.clientX); };
+                tr.onmouseup = (e) => { onEnd(); }; tr.onmouseleave = (e) => { if(isDragging) onEnd(); };
+                tr.ontouchstart = (e) => { onStart(e.touches[0].clientX); }; tr.ontouchmove = (e) => { onMove(e.touches[0].clientX); }; tr.ontouchend = (e) => { onEnd(); };
+
+                tr.onclick = () => {
+                    if (Math.abs(currentX - startX) < 10) {
+                        let p = productsDB.find(x => x.id === item.id);
+                        let totalStock = (p && p.lots) ? p.lots.reduce((sum, l) => sum + (l.stock || 0), 0) : (p ? p.stock : 0);
+                        if (p && invoice[index].qty + 1 > totalStock) { showStockWarning(item.name, totalStock); }
+                        
+                        let updatedItem = invoice.splice(index, 1)[0];
+                        updatedItem.qty += 1;
+                        invoice.unshift(updatedItem); 
+                        
+                        saveDraft(); renderTable();
+                    }
+                };
+
+                tr.innerHTML = `<td style="text-align: right; font-weight:bold; color: var(--text-white);">${item.name}</td><td style="color: var(--text-white); font-weight:bold;">${itemPrice.toFixed(2)}</td><td style="font-weight:bold; color: var(--text-white);">${itemQty}</td><td style="font-weight:bold; color: #ff1a40; text-shadow: 0 0 12px rgba(255, 26, 64, 0.9);">${itemTot.toFixed(2)}</td>`;
+                tbody.appendChild(tr);
+            });
+            
+            document.getElementById('mainTotal').innerText = subTotal.toFixed(2);
+
+            let totalDiv = document.getElementById('totalDisplayDiv');
+            let saveBtn = document.getElementById('mainSaveBtn');
+            if(invoice.length === 0) {
+                totalDiv.style.display = 'none'; saveBtn.style.display = 'none';
+            } else {
+                totalDiv.style.display = 'flex'; saveBtn.style.display = 'flex';
+            }
+        }
+
+        function toggleDetails() { const box = document.getElementById('hiddenDetailsBox'); box.style.display = box.style.display === 'block' ? 'none' : 'block'; }
+
+        function openEditModal(index) {
+            document.getElementById('editItemName').innerText = invoice[index].name;
+            document.getElementById('editPrice').value = invoice[index].price;
+            document.getElementById('editQty').value = invoice[index].qty;
+            document.getElementById('editItemIndex').value = index;
+            
+            let p = productsDB.find(x => x.id === invoice[index].id);
+            let slider = document.getElementById('editBatchesSlider');
+            slider.innerHTML = ''; let totalStock = 0;
+
+            if (p && p.lots && p.lots.length > 0) {
+                p.lots.forEach(b => {
+                    totalStock += b.stock;
+                    slider.innerHTML += `
+                        <div class="batch-card">
+                            <div style="color:var(--neon-border); font-weight:bold;">مورد: ${b.supplier}</div>
+                            <div>شراء: <span style="color:#ff1a40;">${b.purchasePrice}</span> ج</div>
+                            <div>بيع: <span style="color:#00ff66;">${b.price}</span> ج</div>
+                            <div>تاريخ: ${b.date}</div>
+                            <div>كمية: <span style="color:#00ff66; font-weight:bold;">${b.stock}</span></div>
+                        </div>
+                    `;
+                });
+            } else if (p) { 
+                totalStock = p.stock || 0;
+                slider.innerHTML = `
+                    <div class="batch-card" style="min-width:100%;">
+                        <div>شراء: <span style="color:#ff1a40;">${p.purchasePrice || 0}</span> ج</div>
+                        <div>كمية: <span style="color:#00ff66; font-weight:bold;">${totalStock}</span></div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('editTotalStock').innerText = totalStock;
+            document.getElementById('hiddenDetailsBox').style.display = 'none';
+            document.getElementById('editModalOverlay').style.display = 'flex';
+        }
+
+        function saveItemEdit() {
+            let idx = document.getElementById('editItemIndex').value;
+            let newQty = parseFloat(document.getElementById('editQty').value) || 1;
+            let p = productsDB.find(x => x.id === invoice[idx].id);
+            let totalStock = (p && p.lots) ? p.lots.reduce((sum, l) => sum + (l.stock || 0), 0) : (p ? p.stock : 0);
+            if(p && newQty > totalStock) showStockWarning(invoice[idx].name, totalStock);
+
+            invoice[idx].price = parseFloat(document.getElementById('editPrice').value) || 0;
+            invoice[idx].qty = newQty;
+            saveDraft(); closeModals(); renderTable();
+        }
+
+        function openSaveModal() {
+            if(invoice.length === 0) return alert("الفاتورة فارغة!");
+            let sub = parseFloat(document.getElementById('mainTotal').innerText) || 0;
+            document.getElementById('modalTotal').value = sub.toFixed(2);
+            document.getElementById('modalDiscount').value = 0;
+            document.getElementById('modalNotes').value = '';
+            
+            let draftCust = localStorage.getItem('seraj_draft_customer') || '';
+            document.getElementById('customerSearchInput').value = draftCust;
+            handleCustomerInput();
+
+            let t = new Date();
+            document.getElementById('modalDate').value = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+            document.getElementById('modalPaid').value = document.getElementById('modalTotal').value; 
+            calculateModalTotals();
+            document.getElementById('saveModalOverlay').style.display = 'flex';
+        }
+
+        function handleCustomerInput() {
+            loadDB(); // تحديث لحظي للعملاء
+            const query = document.getElementById('customerSearchInput').value.trim().toLowerCase();
+            const resultsDiv = document.getElementById('customerResults');
+            resultsDiv.innerHTML = ''; 
+            if(query.length === 0) { resultsDiv.style.display = 'none'; updateLiveCustomerBalanceUI(null); return; }
+            
+            const exactMatch = customersDB.find(c => c.name.toLowerCase() === query);
+            updateLiveCustomerBalanceUI(exactMatch);
+            
+            const filtered = customersDB.filter(c => c.name.toLowerCase().includes(query));
+            if(filtered.length > 0) {
+                resultsDiv.style.display = 'block';
+                filtered.forEach(c => {
+                    const div = document.createElement('div'); div.className = 'dropdown-item'; div.innerHTML = `<strong>${c.name}</strong>`;
+                    div.onmousedown = (e) => { 
+                        e.preventDefault(); 
+                        document.getElementById('customerSearchInput').value = c.name; 
+                        resultsDiv.style.display = 'none';
+                        updateLiveCustomerBalanceUI(c); 
+                    };
+                    resultsDiv.appendChild(div);
+                });
+            }
+        }
+
+        function updateLiveCustomerBalanceUI(customer) {
+            const balDiv = document.getElementById('liveCustomerBalance');
+            if (customer) {
+                let net = customer.balance || 0;
+                if (net > 0) {
+                    balDiv.innerHTML = `رصيد سابق: <span style="color:#ff1a40; text-shadow:0 0 8px rgba(255,26,64,0.6);">${net} (عليه)</span>`;
+                } else if (net < 0) {
+                    balDiv.innerHTML = `رصيد سابق: <span style="color:#00ff66; text-shadow:0 0 8px rgba(0,255,102,0.6);">${Math.abs(net)} (له)</span>`;
+                } else {
+                    balDiv.innerHTML = `رصيد سابق: <span style="color:#00ff66;">0 (صافي)</span>`;
+                }
+            } else {
+                balDiv.innerHTML = `<span style="color:var(--neon-border);">عميل جديد - الرصيد: 0</span>`;
+            }
+        }
+
+        function calculateModalTotals() {
+            let subTotal = parseFloat(document.getElementById('mainTotal').innerText) || 0;
+            let discount = parseFloat(document.getElementById('modalDiscount').value) || 0;
+            let finalReq = subTotal - discount; 
+            if(finalReq < 0) finalReq = 0;
+            document.getElementById('modalTotal').value = finalReq.toFixed(2);
+            
+            let paidInput = document.getElementById('modalPaid');
+            if (currentInvoiceType === 'return') {
+                paidInput.value = finalReq.toFixed(2);
+                paidInput.readOnly = true;
+                paidInput.style.backgroundColor = "rgba(19, 17, 44, 0.4)";
+                paidInput.style.borderColor = "#ff1a40";
+            } else {
+                paidInput.readOnly = false;
+                paidInput.style.backgroundColor = "rgba(19, 17, 44, 0.6)";
+                paidInput.style.borderColor = "var(--neon-border)";
+            }
+            
+            let paid = parseFloat(paidInput.value) || 0;
+            document.getElementById('modalRemaining').value = (finalReq - paid).toFixed(2);
+        }
+
+        // ==========================================
+        // 🛠️ دالة توليد رقم فاتورة ذكي يمنع التصادم
+        // ==========================================
+        function generateSmartInvoiceId(dbArray) {
+            let deviceCode = localStorage.getItem('seraj_device_code');
+            if (!deviceCode) {
+                deviceCode = Math.floor(Math.random() * 9) + 1; // رقم من 1 لـ 9
+                localStorage.setItem('seraj_device_code', deviceCode);
+            }
+
+            // تصفية الفواتير الخاصة بهذا الجهاز (تبدأ بكود الجهاز وتتكون من 6 أرقام)
+            let myInvoices = dbArray.filter(inv => {
+                let strId = String(inv.id);
+                return strId.startsWith(deviceCode.toString()) && strId.length >= 6;
+            });
+
+            let nextNumber = 1;
+            if (myInvoices.length > 0) {
+                let maxNum = 0;
+                myInvoices.forEach(inv => {
+                    let numPart = parseInt(String(inv.id).substring(1)); // نزع الكود لمعرفة التسلسل
+                    if (!isNaN(numPart) && numPart > maxNum) maxNum = numPart;
+                });
+                nextNumber = maxNum + 1;
+            }
+
+            // تكوين الرقم النهائي (مثال: كود 2 + تسلسل 15 = 200015)
+            let finalId = parseInt(deviceCode.toString() + nextNumber.toString().padStart(5, '0'));
+            return finalId;
+        }
+
+        function confirmSave() {
+            try {
+                // سحب قاعدة البيانات الطازجة فوراً قبل الحفظ لتجنب التضارب
+                loadDB();
+
+                let finalReq = parseFloat(document.getElementById('modalTotal').value) || 0;
+                let inputPaid = parseFloat(document.getElementById('modalPaid').value) || 0;
+                let discount = parseFloat(document.getElementById('modalDiscount').value) || 0;
+                let custName = document.getElementById('customerSearchInput').value.trim();
+                let vaultKey = document.getElementById('modalVaultSelect').value;
+                let invDate = document.getElementById('modalDate').value;
+                let notes = document.getElementById('modalNotes').value.trim();
+
+                let actualPaid = inputPaid;
+                let vaultAmount = inputPaid;
+
+                if (custName === "") {
+                    if (inputPaid > finalReq) { actualPaid = finalReq; vaultAmount = finalReq; }
+                }
+
+                let remaining = finalReq - actualPaid;
+
+                if (remaining > 0 && custName === "") return alert("تنبيه: الفاتورة آجل! يجب إدخال اسم العميل.");
+
+                let prevBal = 0, currBal = 0;
+                if (custName !== "" && currentInvoiceType !== 'quotation') {
+                    let c = customersDB.find(x => x.name === custName);
+                    let isReturn = (currentInvoiceType === 'return');
+                    if (c) { 
+                        prevBal = c.balance; 
+                        c.balance += isReturn ? -remaining : remaining; 
+                        currBal = c.balance; 
+                    }
+                    else { 
+                        let newC = { id: Date.now(), name: custName, balance: isReturn ? -remaining : remaining }; 
+                        customersDB.push(newC); 
+                        currBal = isReturn ? -remaining : remaining; 
+                    }
+                    DB.saveCustomers(customersDB);
+                }
+
+                let formattedItems = invoice.map(item => ({
+                    ...item,
+                    total: (parseFloat(item.price) || 0) * (parseFloat(item.qty) || 0)
+                }));
+
+                if (currentInvoiceType !== 'quotation') {
+                    let isReturn = (currentInvoiceType === 'return');
+
+                    formattedItems.forEach(item => {
+                        let p = productsDB.find(x => x.id === item.id);
+                        if (p) {
+                            let qtyToProcess = parseFloat(item.qty) || 0; 
+                            
+                            if (isReturn) {
+                                if (p.lots && p.lots.length > 0) {
+                                    p.lots[0].stock = parseFloat(p.lots[0].stock) + qtyToProcess;
+                                } else {
+                                    p.stock = (parseFloat(p.stock) || 0) + qtyToProcess;
+                                }
+                            } else {
+                                if (p.lots && p.lots.length > 0) {
+                                    p.lots.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                                    for (let i = 0; i < p.lots.length; i++) {
+                                        if (qtyToProcess <= 0) break;
+                                        
+                                        let currentLotStock = parseFloat(p.lots[i].stock) || 0;
+                                        if (currentLotStock >= qtyToProcess) {
+                                            p.lots[i].stock = currentLotStock - qtyToProcess; 
+                                            qtyToProcess = 0;
+                                        } else {
+                                            qtyToProcess -= currentLotStock; 
+                                            p.lots[i].stock = 0;
+                                        }
+                                    }
+                                    
+                                    p.lots = p.lots.filter(l => parseFloat(l.stock) !== 0);
+                                    
+                                    if (qtyToProcess > 0) { 
+                                        if(p.lots.length === 0) {
+                                            p.lots.push({ supplier: 'سحب بالسالب (عجز)', stock: -qtyToProcess, purchasePrice: 0, price: item.price, date: new Date().toISOString().split('T')[0] });
+                                        } else {
+                                            p.lots[p.lots.length - 1].stock = parseFloat(p.lots[p.lots.length - 1].stock) - qtyToProcess; 
+                                        }
+                                    }
+                                } else {
+                                    p.stock = (parseFloat(p.stock) || 0) - qtyToProcess;
+                                }
+                                checkAndRunAutoUnpackForSale(p);
+                            }
+                        }
+                    });
+                    
+                    DB.saveProducts(productsDB);
+                    if (vaultAmount > 0) {
+                        let vData = DB.getVaults() || {};
+                        if(!vData[vaultKey]) vData[vaultKey] = 0;
+                        
+                        if (isReturn) { vData[vaultKey] = parseFloat(vData[vaultKey]) - parseFloat(vaultAmount); } 
+                        else { vData[vaultKey] = parseFloat(vData[vaultKey]) + parseFloat(vaultAmount); }
+                        DB.saveVaults(vData);
+
+                        let tMoves = DB.getTreasuryMoves() || [];
+                        tMoves.push({
+                            id: Date.now(), 
+                            type: isReturn ? 'return_sale' : 'sales', 
+                            vault: vaultKey, 
+                            amountAdd: isReturn ? 0 : vaultAmount, 
+                            amountDeduct: isReturn ? vaultAmount : 0,
+                            notes: `${isReturn ? 'فاتورة مرتجع بيع' : 'فاتورة بيع'} - العميل: ${custName || 'نقدي'}`, 
+                            date: invDate
+                        });
+                        DB.saveTreasuryMoves(tMoves);
+                    }
+                }
+
+                let invType = currentInvoiceType === 'all' && remaining > 0 ? 'delayed' : currentInvoiceType;
+
+                // توليد الرقم الذكي بعد سحب الداتا الطازجة
+                let newInvoiceId = generateSmartInvoiceId(invoicesDB);
+                let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+                lastSavedInvoice = {
+                    id: newInvoiceId, type: invType, date: invDate, customer: custName || null,
+                    total: finalReq, remaining: remaining, discount: discount, paid: actualPaid, vault: vaultKey,
+                    notes: notes, items: formattedItems, prevBalance: prevBal, currentBalance: currBal,
+                    _device: dName,
+                    _lastModifiedBy: dName
+                };
+                
+                invoicesDB.push(lastSavedInvoice);
+                DB.saveSalesInvoices(invoicesDB);
+
+                localStorage.removeItem('seraj_draft_customer');
+                localStorage.removeItem('seraj_draft_invoice');
+                invoice = []; 
+                renderTable();
+                closeModals();
+                
+                let printBar = document.getElementById('bottomPrintBar');
+                printBar.style.display = 'flex';
+
+            } catch(err) {
+                console.error("خطأ أثناء الحفظ:", err);
+                alert("حدث خطأ أثناء الحفظ: " + err.message);
+            }
+        }
+
+        function togglePrintMenu(e) {
+            if (e) e.stopPropagation();
+            let m = document.getElementById('printDropdownMenu');
+            m.style.display = m.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        function closeAllMenus(e) {
+            let m = document.getElementById('printDropdownMenu');
+            if(m) m.style.display = 'none';
+            let sRes = document.getElementById('customerResults');
+            if(sRes) sRes.style.display = 'none';
+            let pRes = document.getElementById('productResults');
+            if(pRes) pRes.style.display = 'none';
+        }
+
+        function closeModals() { document.getElementById('editModalOverlay').style.display = 'none'; document.getElementById('saveModalOverlay').style.display = 'none'; }
+
+        function printLastInvoice() {
+            if(!lastSavedInvoice) return;
+            let sub = 0; let itemsHtml = '';
+            
+            lastSavedInvoice.items.forEach(item => {
+                sub += item.total;
+                itemsHtml += `<tr><td>${item.name}</td><td>${item.price}</td><td>${item.qty}</td><td>${item.total.toFixed(2)}</td></tr>`;
+            });
+            
+            let rem = (sub - lastSavedInvoice.discount) - lastSavedInvoice.paid;
+
+            let accountHtml = '';
+            if (lastSavedInvoice.customer) {
+                let prev = lastSavedInvoice.prevBalance || 0;
+                let curr = lastSavedInvoice.currentBalance || 0;
+                
+                let prevText = prev > 0 ? `${prev.toFixed(2)} (عليه)` : (prev < 0 ? `${Math.abs(prev).toFixed(2)} (له)` : "0.00");
+                let currText = curr > 0 ? `${curr.toFixed(2)} (عليه)` : (curr < 0 ? `${Math.abs(curr).toFixed(2)} (له)` : "0.00");
+
+                accountHtml = `
+                    <div style="border-top: 1px dashed #000; margin-top: 6px; padding-top: 6px;">
+                        <div><span class="label">حساب سابق:</span> ${prevText}</div>
+                        <div><span class="label">إجمالي الحساب الجديد:</span> ${currText}</div>
+                    </div>
+                `;
+            }
+
+            let printHtml = `
+                <div class="print-header">سراج LED</div>
+                
+                <div class="print-meta-row">
+                    <span>رقم: ${lastSavedInvoice.id}</span>
+                    <span>التاريخ: ${lastSavedInvoice.date}</span>
+                </div>
+                <div class="print-customer">العميل: ${lastSavedInvoice.customer || "نقدي"}</div>
+                
+                <table class="print-table">
+                    <thead><tr><th>الصنف</th><th>السعر</th><th>العدد</th><th>الإجمالي</th></tr></thead>
+                    <tbody>${itemsHtml}</tbody>
+                </table>
+                
+                <div class="print-totals">
+                    <div><span class="label">إجمالي الفاتورة:</span> ${sub.toFixed(2)}</div>
+                    ${lastSavedInvoice.discount > 0 ? `<div><span class="label">الخصم:</span> ${lastSavedInvoice.discount.toFixed(2)}</div>` : ''}
+                    <div><span class="label">المدفوع:</span> ${lastSavedInvoice.paid.toFixed(2)}</div>
+                    <div><span class="label">باقي الفاتورة:</span> ${rem.toFixed(2)}</div>
+                    ${accountHtml}
+                </div>
+            `;
+            
+            document.getElementById('printReceiptArea').innerHTML = printHtml;
+            window.print();
+            
+            document.getElementById('printDropdownMenu').style.display = 'none';
+        }
+        function exportLastInvoiceToExcel() {
+            if(!lastSavedInvoice) return;
+            let excelData = [
+                ["رقم الفاتورة", lastSavedInvoice.id, "التاريخ", lastSavedInvoice.date],
+                ["العميل", lastSavedInvoice.customer || "نقدي", "النوع", lastSavedInvoice.type],
+                ["ملاحظات", lastSavedInvoice.notes || ""],
+                [],
+                ["اسم الصنف", "السعر", "الكمية", "الإجمالي"]
+            ];
+            let sub = 0;
+            lastSavedInvoice.items.forEach(item => {
+                excelData.push([item.name, item.price, item.qty, item.total]);
+                sub += item.total;
+            });
+            excelData.push([]);
+            excelData.push(["الإجمالي", sub]);
+            excelData.push(["الخصم", lastSavedInvoice.discount]);
+            excelData.push(["الصافي", sub - lastSavedInvoice.discount]);
+            excelData.push(["المدفوع", lastSavedInvoice.paid]);
+            excelData.push(["المتبقي", (sub - lastSavedInvoice.discount) - lastSavedInvoice.paid]);
+
+            let ws = XLSX.utils.aoa_to_sheet(excelData);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "الفاتورة");
+            XLSX.writeFile(wb, `Invoice_${lastSavedInvoice.id}.xlsx`);
+            document.getElementById('bottomPrintBar').style.display = 'none';
+            lastSavedInvoice = null;
+        }
+    </script>
+    <script src="ai_brain.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('تم تشغيل الأوفلاين بنجاح', reg))
+                    .catch(err => console.log('خطأ في تشغيل الأوفلاين', err));
+            });
+        }
+    </script>  
+</body>
+</html>

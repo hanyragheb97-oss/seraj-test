@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مخزن المنتجات - سراج LED</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#070913">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --neon-border: #a855f7;
+            --neon-glow: rgba(168, 85, 247, 0.4);
+            --bg-dark-1: #070913;
+            --bg-dark-2: #120f29;
+            --card-bg: rgba(19, 17, 44, 0.88);
+            --text-white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
+            color: var(--text-white); 
+            margin: 0; 
+            padding: 0; 
+            user-select: none; 
+            overflow-x: hidden; 
+            -webkit-tap-highlight-color: transparent;
+            min-height: 100vh;
+        }
+        
+        .view-section { display: none; }
+        .active-view { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        
+        .header { 
+            background: rgba(19, 17, 44, 0.95); 
+            backdrop-filter: blur(12px); 
+            color: var(--text-white); 
+            padding: 15px 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            font-size: 22px; 
+            font-weight: bold; 
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            border-bottom: 2px solid var(--neon-border);
+            box-shadow: 0 0 25px var(--neon-glow);
+        }
+
+        .header-back-btn {
+            background: #1d4ed8;
+            border: 2px solid #3b82f6;
+            border-radius: 8px;
+            padding: 3px 10px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px rgba(59, 130, 246, 0.7);
+            transition: all 0.2s;
+        }
+        .header-back-btn:active { transform: scale(0.95); filter: brightness(1.2); }
+        .header-back-btn .arrow { color: white; font-size: 13px; line-height: 1; }
+        .header-back-btn .text { color: white; font-size: 10px; font-weight: bold; font-family: sans-serif; letter-spacing: 0.5px; }
+
+        .inventory-container { max-width: 800px; margin: auto; padding: 6px 10px; padding-bottom: 140px; }
+        
+        .search-box { 
+            display: flex; 
+            align-items: center; 
+            border: 2px solid var(--neon-border); 
+            border-radius: 14px; 
+            padding: 4px 15px; 
+            background: rgba(19, 17, 44, 0.95);
+            margin-bottom: 8px;
+            box-shadow: 0 4px 15px var(--neon-glow);
+            position: sticky; 
+            top: 60px;
+            z-index: 45; 
+        }
+        .search-box input { 
+            flex: 1; 
+            border: none; 
+            outline: none; 
+            font-size: 17px; 
+            padding: 4px 0; 
+            background: transparent;
+            color: var(--text-white);
+            font-weight: bold;
+        }
+
+        table { 
+            width: 100%; 
+            border-collapse: separate;
+            border-spacing: 0;
+            background: rgba(19, 17, 44, 0.8); 
+            border-radius: 16px; 
+            box-shadow: 0 0 20px var(--neon-glow);
+            border: 2px solid var(--neon-border);
+        }
+        
+        table th { 
+            background-color: #1c133a;
+            color: var(--text-white); 
+            padding: 10px 5px; 
+            font-size: 15px; 
+            text-align: center; 
+            cursor: pointer; 
+            white-space: nowrap;
+            border-bottom: 2px solid var(--neon-border);
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            position: sticky; 
+            top: 105px;
+            z-index: 40;
+        }
+        table td { 
+            padding: 6px 5px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.3); 
+            text-align: center; 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: var(--text-white); 
+            cursor: pointer; 
+        }
+        table tr:active { background-color: rgba(168, 85, 247, 0.3); }
+        table td:first-child { text-align: right; padding-right: 10px; }
+
+        .fab-container { position: fixed; bottom: 80px; left: 20px; z-index: 90; }
+        
+        .fab-btn { 
+            background: #4b5563; 
+            color: white; 
+            border: 2px solid var(--neon-border); 
+            border-radius: 50%; 
+            width: 65px; 
+            height: 65px; 
+            font-size: 32px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            box-shadow: 0 0 25px var(--neon-glow); 
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .fab-btn:active { filter: brightness(1.2); transform: scale(0.95); }
+
+        .details-container { max-width: 800px; margin: auto; background: transparent; min-height: 100vh; padding-bottom: 150px; display: flex; flex-direction: column; }
+        
+        .fixed-top-section { position: sticky; top: 62px; background: rgba(19, 17, 44, 0.95); backdrop-filter: blur(12px); z-index: 40; padding: 15px; border-bottom: 2px solid var(--neon-border); box-shadow: 0 4px 15px var(--neon-glow); }
+        .product-main-title { font-size: 26px; font-weight: bold; color: var(--text-white); text-align: center; margin-bottom: 4px; text-shadow: 0 0 15px rgba(255, 255, 255, 0.8); }
+        .product-title-line { border: 0; height: 2px; background: var(--neon-border); margin: 6px auto 12px auto; width: 90%; box-shadow: 0 0 12px var(--neon-glow); }
+        
+        .product-meta-row { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: bold; color: var(--text-white); padding: 0 10px 8px 10px; }
+        .text-green-edit { color: #4ade80; cursor: pointer; font-weight: bold; text-shadow: 0 0 10px rgba(74, 222, 128, 0.7); }
+        .text-green-edit:hover { text-decoration: underline; }
+
+        .sticky-headers-bar { background-color: rgba(168, 85, 247, 0.25); color: var(--text-white); border-radius: 12px; padding: 12px 10px; display: flex; justify-content: space-around; font-size: 16px; font-weight: bold; text-align: center; border: 1px solid var(--neon-border); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
+        .sticky-headers-bar div { flex: 1; }
+
+        .scrollable-body-section { flex: 1; overflow-y: auto; max-height: calc(100vh - 330px); padding: 0 15px; }
+        
+        .lot-row-card { background: rgba(19, 17, 44, 0.75); border-bottom: 1px solid rgba(168, 85, 247, 0.2); padding: 14px 10px; display: flex; justify-content: space-around; align-items: center; text-align: center; cursor: pointer; border-radius: 12px; margin-top: 8px; border: 1px solid rgba(168, 85, 247, 0.3); }
+        .lot-row-card:active { background-color: rgba(168, 85, 247, 0.35); }
+        .lot-row-card div { flex: 1; }
+
+        .fixed-bottom-actions { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(19, 17, 44, 0.95); backdrop-filter: blur(10px); padding: 12px 15px; border-top: 2px solid var(--neon-border); z-index: 80; box-shadow: 0 -4px 25px var(--neon-glow); }
+        .total-stock-banner { display: flex; justify-content: space-between; align-items: center; background: rgba(19, 17, 44, 0.85); border: 2px solid var(--neon-border); border-radius: 25px; padding: 8px 20px; margin-bottom: 10px; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: 0 0 15px var(--neon-glow); }
+        
+        .action-buttons-row { display: flex; background: rgba(19, 17, 44, 0.9); border: 2px solid var(--neon-border); border-radius: 14px; overflow: hidden; max-width: 600px; margin: auto; box-shadow: 0 0 15px var(--neon-glow); }
+        .action-btn-main { background: transparent; color: var(--text-white); border: none; padding: 12px; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 15px; font-weight: bold; cursor: pointer; text-shadow: 0 0 8px rgba(255, 255, 255, 0.4); }
+        .action-btn-main:active { background: rgba(168, 85, 247, 0.3); }
+
+        .unified-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background-color: rgba(19, 17, 44, 0.95); backdrop-filter: blur(10px); display: flex; padding: 12px 15px; justify-content: center; z-index: 80; border-top: 2px solid var(--neon-border); box-shadow: 0 -4px 25px var(--neon-glow); }
+        .bottom-bar-print-btn { background: rgba(19, 17, 44, 0.85); color: var(--text-white); border: 2px solid var(--neon-border); border-radius: 20px; padding: 10px 30px; font-size: 16px; font-weight: bold; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; position: relative; box-shadow: 0 0 15px var(--neon-glow); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); }
+        .bottom-bar-print-btn:active { background-color: rgba(168, 85, 247, 0.3); }
+        
+        .dropdown-menu { position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #13112c; border: 2px solid var(--neon-border); border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); display: none; z-index: 100; margin-bottom: 10px; overflow: hidden; width: 210px; text-align: center;}
+        .dropdown-item { padding: 14px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; font-weight: bold; font-size: 15px; color: var(--text-white); text-shadow: 0 0 6px rgba(255, 255, 255, 0.4);}
+        .dropdown-item:hover { background-color: rgba(168, 85, 247, 0.3); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(5, 7, 15, 0.85); display: none; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(8px);}
+        .compact-modal { background: rgba(19, 17, 44, 0.95); padding: 25px; border-radius: 24px; width: 92%; max-width: 420px; box-shadow: 0 0 45px rgba(168, 85, 247, 0.6); max-height: 92vh; overflow-y: auto; border: 2px solid var(--neon-border);}
+        .compact-header { border-bottom: 2px solid rgba(168, 85, 247, 0.3); padding-bottom: 15px; margin-bottom: 20px; text-align: center;}
+        .compact-header h3 { margin: 0; font-size: 20px; color: var(--text-white); text-shadow: 0 0 12px rgba(255, 255, 255, 0.8); }
+        .form-row { margin-bottom: 15px; }
+        .form-row label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 16px; color: var(--text-white); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);}
+        .form-row input, .form-row select { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid var(--neon-border); border-radius: 14px; font-weight: bold; box-sizing: border-box; background: rgba(19, 17, 44, 0.6); color: var(--text-white); box-shadow: 0 0 10px var(--neon-glow); outline: none;}
+        .form-row input:focus, .form-row select:focus { box-shadow: 0 0 25px rgba(168, 85, 247, 0.8); border-color: #ec4899; }
+        .form-row select option { background: #13112c; color: #ffffff; }
+        
+        .btn-group { display: flex; gap: 12px; margin-top: 25px; border-top: 2px solid rgba(168, 85, 247, 0.3); padding-top: 20px; }
+        .btn-group button { flex: 1; padding: 14px; border: none; border-radius: 14px; cursor: pointer; font-size: 18px; font-weight: bold; color: white; box-shadow: 0 0 15px rgba(0,0,0,0.3); transition: all 0.2s;}
+        .confirm-btn { background: linear-gradient(135deg, #9333ea, #db2777) !important; border: 2px solid #ec4899 !important; box-shadow: 0 0 20px rgba(219, 39, 119, 0.6) !important;}
+        .cancel-btn { background: rgba(19, 17, 44, 0.8) !important; border: 2px solid var(--neon-border) !important; color: var(--text-white) !important;}
+
+        .val-red { color: #ff3333 !important; font-weight: bold; text-shadow: 0 0 12px rgba(255, 51, 51, 0.9), 0 0 25px rgba(255, 51, 51, 0.5); }
+        .val-green { color: #00ff66 !important; font-weight: bold; text-shadow: 0 0 12px rgba(0, 255, 102, 0.9), 0 0 25px rgba(0, 255, 102, 0.5); }
+    </style>
+</head>
+<body onclick="closeAllMenus()">
+
+    <div id="inventory-list-view" class="view-section active-view">
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; flex-direction: column; overflow: hidden; height: 100vh; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 10;">
+            
+            <div class="header" style="flex-shrink: 0; justify-content: space-between; position: relative; top: 0;">
+                <div style="width: 30px;"></div>
+                <span style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);">المخزن</span>
+                <span onclick="openBulkUpdateModal()" style="font-size: 24px; cursor: pointer; text-shadow: 0 0 15px var(--neon-border); transition: 0.2s;" onmousedown="this.style.transform='scale(0.9)'" onmouseup="this.style.transform='scale(1)'">📈</span>
+            </div>
+            
+            <div style="flex-shrink: 0; padding: 15px 15px 5px 15px; position: relative; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; z-index: 50;">
+                
+                <button onclick="processNextInQueue()" id="queueNextBtn" style="display:none; position: absolute; top: -2px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, #f59e0b, #d97706); color:white; border:2px solid #fff; border-radius:20px; padding:4px 15px; font-weight:bold; cursor:pointer; font-size:14px; box-shadow: 0 4px 15px rgba(245, 158, 11, 0.6); z-index: 60; white-space: nowrap;">
+                    التالي ⏭️
+                </button>
+                
+                <div class="search-box" style="margin-bottom: 0; position: relative; top: 0;">
+                    <span style="font-size:20px; color:var(--neon-border); margin-left:10px;">🔍</span>
+                    <input type="text" id="inventorySearch" placeholder="ابحث أو اضغط على المايك 🎙️..." oninput="renderInventoryTable()">
+                    <button onclick="startSmartVoiceSearch()" id="voiceSearchBtn" style="background:transparent; border:none; border-right:2px solid rgba(168,85,247,0.3); padding-right:15px; font-size:24px; cursor:pointer; transition:0.3s; outline:none;">🎙️</button>
+                </div>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 10px 10px 140px 10px; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch;">
+                <table style="width: 100%; border-collapse: separate; border-spacing: 0; background: rgba(19, 17, 44, 0.8); border-radius: 16px; box-shadow: 0 0 20px var(--neon-glow); border: 2px solid var(--neon-border);">
+                    <thead>
+                        <tr>
+                            <th style="text-align: right; background-color: #1c133a; color: white; padding: 14px 10px; font-size: 17px; border-bottom: 2px solid var(--neon-border); position: sticky; top: 0; z-index: 40;" onclick="sortInventory('name')">المنتج ↕</th>
+                            <th style="background-color: #1c133a; color: white; padding: 14px 5px; font-size: 17px; border-bottom: 2px solid var(--neon-border); position: sticky; top: 0; z-index: 40;" onclick="sortInventory('stock')">الرصيد ↕</th>
+                            <th style="background-color: #1c133a; color: white; padding: 14px 5px; font-size: 17px; border-bottom: 2px solid var(--neon-border); position: sticky; top: 0; z-index: 40;" onclick="sortInventory('price')">البيع ↕</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody"></tbody>
+                </table>
+            </div>
+
+            <div class="fab-container">
+                <button class="fab-btn" onclick="openAddProductModal()">➕</button>
+            </div>
+
+            <div class="unified-bottom-bar" onclick="event.stopPropagation()" style="justify-content: space-between;">
+                <button class="header-back-btn" style="padding: 0 15px; height: 45px; flex-shrink: 0;" onclick="window.location.href='index.html'">
+                    <span class="arrow" style="font-size: 15px;">⬅</span><span class="text" style="font-size: 10px;">BACK</span>
+                </button>
+                
+                <div style="position: relative;">
+                    <button class="bottom-bar-print-btn" onclick="togglePrintMenu(event)" style="padding: 8px 20px; font-size: 15px;">
+                        🖨️ طباعة / تصدير ▼
+                    </button>
+                    <div class="dropdown-menu" id="printMenuDropdown" style="left: 0; transform: none; text-align: right;">
+                        <div class="dropdown-item" onclick="window.print()">📄 طباعة / بي دي إف</div>
+                        <div class="dropdown-item" onclick="toggleExcelSubMenu(event)">📊 إكسيل (Excel) ▶</div>
+                        <div id="excelSubMenu" style="display: none; background: rgba(19, 17, 44, 0.95); border-top: 1px solid var(--neon-border);">
+                            <div class="dropdown-item" onclick="exportInventoryExcel()">📤 تصدير بيانات</div>
+                            <div class="dropdown-item" onclick="triggerExcelImport()">📥 استيراد من ملف</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- الشاشة 2: تفاصيل المنتج -->
+    <div id="product-details-view" class="view-section">
+        <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100; display: flex; flex-direction: column; overflow: hidden; height: 100vh;">
+            
+            <div class="header" style="flex-shrink: 0; justify-content: center;">
+                <span style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);">تفاصيل المنتج</span>
+            </div>
+            
+            <div style="flex: 1; min-height: 0; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; position: relative;">
+                
+                <div style="background: rgba(19, 17, 44, 0.95); padding: 8px 10px; border-bottom: 1px solid var(--neon-border); box-shadow: 0 2px 10px var(--neon-glow); flex-shrink: 0; z-index: 10;">
+                    <div id="detProductName" style="font-size: 22px; font-weight: bold; color: white; text-align: center; margin-bottom: 2px;">اسم المنتج</div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: bold; padding: 2px 5px 6px 5px;">
+                        <span id="detCategoryText" style="color: white;">الصنف: ---</span>
+                        <span onclick="openEditProductModal()" style="color: #4ade80; cursor: pointer; text-shadow: 0 0 10px rgba(74, 222, 128, 0.7);">تعديل</span>
+                        <span id="detBarcodeText" style="color: white;">الكود: ---</span>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 6px;">
+                        <button onclick="openAutoParentModal(event)" style="background: rgba(168, 85, 247, 0.25); color: #e879f9; border: 1px solid var(--neon-border); border-radius: 8px; padding: 4px 12px; font-size: 13px; font-weight: bold; cursor: pointer;">🔗 ربط صنف رئيسي</button>
+                        <div id="currentParentDisplay" style="font-size: 12px; color: #00ff66; margin-top: 5px; display: none;"></div>
+                    </div>
+                    <div style="background-color: rgba(168, 85, 247, 0.25); color: white; border-radius: 8px; padding: 8px 5px; display: flex; text-align: center; font-weight: bold; border: 1px solid var(--neon-border); font-size: 14px;">
+                        <div style="flex: 1;">رصيد المخزن</div><div style="flex: 1;">سعر الشراء</div><div style="flex: 1;">سعر البيع</div>
+                    </div>
+                </div>
+
+                <div id="detScrollableRows" style="flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; padding: 8px 10px 100px 10px; width: 100%; box-sizing: border-box; -webkit-overflow-scrolling: touch;"></div>
+            
+            </div>
+
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(19, 17, 44, 0.95); padding: 8px 10px; border-top: 1px solid var(--neon-border); z-index: 80;">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(19, 17, 44, 0.85); border: 1px solid var(--neon-border); border-radius: 15px; padding: 4px 15px; margin-bottom: 6px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                    <span style="font-size: 14px; font-weight: bold; color: white;">إجمالي المخزن</span>
+                    <span id="detTotalStockBadge" style="font-size: 18px; font-weight: bold; color: #00ff66;">0</span>
+                </div>
+                
+                <div style="display: flex; gap: 8px; max-width: 600px; margin: auto; align-items: center;">
+                    <button class="header-back-btn" style="padding: 0 10px; height: 45px; flex-shrink: 0;" onclick="switchView('inventory-list-view')">
+                        <span class="arrow" style="font-size: 15px;">⬅</span><span class="text" style="font-size: 10px;">BACK</span>
+                    </button>
+                    <div style="display: flex; flex: 1; background: rgba(19, 17, 44, 0.9); border: 1px solid var(--neon-border); border-radius: 10px; overflow: hidden;">
+                        <button onclick="deleteCurrentProduct()" style="background: transparent; color: white; border: none; padding: 6px; flex: 1; display: flex; flex-direction: column; align-items: center; font-weight: bold; cursor: pointer; font-size: 13px;">🗑️<br>حذف</button>
+                        <button onclick="openAddLotModal()" style="background: transparent; color: white; border: none; padding: 6px; flex: 1; display: flex; flex-direction: column; align-items: center; font-weight: bold; cursor: pointer; border-right: 1px solid var(--neon-border); border-left: 1px solid var(--neon-border); font-size: 13px;">➕<br>اضافة</button>
+                        <button onclick="openUpdatePriceModal()" style="background: transparent; color: white; border: none; padding: 6px; flex: 1; display: flex; flex-direction: column; align-items: center; font-weight: bold; cursor: pointer; font-size: 13px;">✏️<br>سعر</button>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- نوافذ منبثقة (Modals) -->
+    <div class="modal-overlay" id="autoParentModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>🔗 ربط الصنف الرئيسي</h3></div>
+            
+            <div class="form-row">
+                <label>بحث عن الكرتونة/الصنف:</label>
+                <input type="text" id="parentSearchInput" placeholder="اكتب اسم الصنف..." oninput="filterParentDropdown()">
+            </div>
+            
+            <div class="form-row">
+                <label>اختر من النتائج:</label>
+                <select id="modalAutoParentSelect" style="width: 100%; height: 45px;"></select>
+            </div>
+            
+            <div class="form-row">
+                <label>معامل التحويل (كم قطعة في الكرتونة؟):</label>
+                <input type="number" id="modalAutoConversionRate" value="50" min="1" step="any">
+            </div>
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('autoParentModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="saveAutoParentLink()">حفظ الربط</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addProductModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>إضافة منتج جديد</h3></div>
+            <div class="form-row"><label>اسم المنتج:</label><input type="text" id="addProdName"></div>
+            <div class="form-row"><label>الصنف:</label><input type="text" id="addProdCategory" placeholder="مثال: كهرباء..."></div>
+            <div class="form-row"><label>الكود (اختياري):</label><input type="text" id="addProdBarcode" placeholder="يترك فارغاً للتلقائي"></div>
+            <div class="form-row"><label>سعر الشراء:</label><input type="number" id="addProdPurchase" value="0" min="0" step="any" onclick="this.select()"></div>
+            <div class="form-row"><label>سعر البيع:</label><input type="number" id="addProdPrice" value="0" min="0" step="any" onclick="this.select()"></div>
+            <div class="form-row"><label>الكمية الافتتاحية:</label><input type="number" id="addProdStock" value="0" step="any" onclick="this.select()"></div>
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('addProductModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="confirmAddProduct()">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editProductModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>تعديل بيانات المنتج</h3></div>
+            <div class="form-row"><label>اسم المنتج:</label><input type="text" id="editProdName"></div>
+            <div class="form-row"><label>الصنف:</label><input type="text" id="editProdCategory"></div>
+            <div class="form-row"><label>الكود:</label><input type="text" id="editProdBarcode"></div>
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('editProductModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="confirmEditProduct()">تحديث</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="addLotModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>إضافة كمية / دفعة جديدة</h3></div>
+            <div class="form-row"><label>المورد / البيان:</label><input type="text" id="lotSupplier" placeholder="اسم المورد أو سبب الإضافة..."></div>
+            <div class="form-row"><label>الكمية:</label><input type="number" id="lotStock" value="1" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="form-row"><label>سعر الشراء:</label><input type="number" id="lotPurchase" value="0" min="0" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="form-row"><label>سعر البيع:</label><input type="number" id="lotPrice" value="0" min="0" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('addLotModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="confirmAddLot()">تأكيد وإضافة</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="editLotModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>تعديل دفعة / حركة المخزن</h3></div>
+            <input type="hidden" id="editLotIndex">
+            <div class="form-row"><label>الكمية (الرصيد):</label><input type="number" id="editLotStock" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="form-row"><label>سعر الشراء:</label><input type="number" id="editLotPurchase" min="0" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="form-row"><label>سعر البيع:</label><input type="number" id="editLotPrice" min="0" step="any" onfocus="this.select()" onclick="this.select()"></div>
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('editLotModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="saveEditedLot()">حفظ التعديل</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="bulkUpdateModal" onclick="this.style.display='none'">
+        <div class="compact-modal" onclick="event.stopPropagation()">
+            <div class="compact-header"><h3>📈 التعديل الشامل للأسعار</h3></div>
+            
+            <div style="background: rgba(19, 17, 44, 0.6); padding: 15px; border-radius: 14px; border: 1px dashed var(--neon-border); margin-bottom: 15px;">
+                <div style="margin-bottom: 10px; font-weight: bold; color: var(--text-white);">🎯 ماذا تريد أن تعدل؟</div>
+                <div style="display: flex; justify-content: space-around; margin-bottom: 15px;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="bulkTarget" value="sell" checked> سعر البيع</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;"><input type="radio" name="bulkTarget" value="purchase"> سعر الشراء</label>
+                </div>
+
+                <div style="margin-bottom: 10px; font-weight: bold; color: var(--text-white); border-top: 1px solid rgba(168, 85, 247, 0.3); padding-top: 10px;">⚖️ نوع التعديل:</div>
+                <div style="display: flex; justify-content: space-around;">
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: #00ff66;"><input type="radio" name="bulkOp" value="inc" checked> زيادة (+)</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: #ff1a40;"><input type="radio" name="bulkOp" value="dec"> نقصان (-)</label>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <label>التصنيف المستهدف:</label>
+                <select id="bulkCategorySelect" style="width: 100%;">
+                    <option value="all">جميع المنتجات (المخزن بالكامل)</option>
+                </select>
+            </div>
+
+            <div class="form-row" style="position: relative;">
+                <label>قيمة التغيير (نسبة مئوية):</label>
+                <input type="number" id="bulkPercentVal" placeholder="مثال: 10" min="0" step="any" style="padding-left: 45px;">
+                <span style="position: absolute; left: 15px; bottom: 12px; font-size: 20px; font-weight: bold; color: var(--neon-border);">%</span>
+            </div>
+
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="document.getElementById('bulkUpdateModal').style.display='none'">إلغاء</button>
+                <button class="confirm-btn" onclick="applyBulkPriceUpdate()">تطبيق التعديل</button>
+            </div>
+        </div>
+    </div>
+    
+    <input type="file" id="excelFileInput" style="display: none;" accept=".xlsx, .xls" onchange="handleExcelImport(event)">
+   
+    <script>
+        let voiceSearchQueue = []; 
+
+        function startSmartVoiceSearch() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) return alert("متصفحك لا يدعم البحث الصوتي.");
+            
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-EG';
+            
+            const voiceBtn = document.getElementById('voiceSearchBtn');
+            voiceBtn.innerHTML = '🔴';
+            voiceBtn.style.transform = 'scale(1.2)';
+            
+            recognition.start();
+            
+            recognition.onresult = (event) => {
+                let transcript = event.results[0][0].transcript;
+                let cleanText = transcript.replace(/[.,،؛؟?]/g, ' ');
+                let items = cleanText.split(/زائد|زايد|\+/);
+                
+                const engNumbers = ['0','1','2','3','4','5','6','7','8','9'];
+                const arNumbers  = ['٠','١','٢','٣','٤','٥','٦','٧','٨','٩'];
+
+                let filteredItems = items.map(item => {
+                    let processed = item.toLowerCase();
+                    const stopWords = ['عايز', 'عاوز', 'هات', 'هاتلي', 'جهز', 'جهزلي', 'ضيف', 'حط', 'واحد', 'اتنين', 'تلاته'];
+                    stopWords.forEach(w => { processed = processed.replace(new RegExp('\\b' + w + '\\b', 'g'), ' '); });
+                    
+                    processed = processed.replace(/لد/g, 'ليد').replace(/led/g, 'ليد').replace(/رسيفير/g, 'ريسيفر');
+                    processed = processed.replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
+                    
+                    let chars = processed.split('');
+                    for(let i = 0; i < chars.length; i++) {
+                        let idx = engNumbers.indexOf(chars[i]);
+                        if(idx > -1) {
+                            chars[i] = arNumbers[idx];
+                        }
+                    }
+                    processed = chars.join('');
+                    return processed.trim();
+                }).filter(i => i !== ''); 
+                
+                if (filteredItems.length > 0) {
+                    voiceSearchQueue = filteredItems; 
+                    processNextInQueue(); 
+                }
+            };
+            
+            recognition.onerror = () => { resetVoiceBtn(voiceBtn); };
+            recognition.onend = () => { resetVoiceBtn(voiceBtn); };
+        }
+
+        function resetVoiceBtn(btn) {
+            btn.innerHTML = '🎙️';
+            btn.style.transform = 'scale(1)';
+        }
+
+        function processNextInQueue() {
+            let searchInput = document.getElementById('inventorySearch');
+            let nextBtn = document.getElementById('queueNextBtn');
+            
+            if (voiceSearchQueue.length > 0) {
+                let currentItem = voiceSearchQueue.shift(); 
+                searchInput.value = currentItem;
+                renderInventoryTable();
+                
+                if (voiceSearchQueue.length > 0) {
+                    nextBtn.style.display = 'inline-block';
+                    nextBtn.innerHTML = `التالي (${voiceSearchQueue.length}) ⏭️`;
+                } else {
+                    nextBtn.style.display = 'none'; 
+                }
+            } else {
+                searchInput.value = '';
+                nextBtn.style.display = 'none';
+                renderInventoryTable();
+            }
+        }
+    </script>
+    <script src="db.js"></script>
+    <script>
+        let productsDB = [];
+        let currentSortField = 'name';
+        let currentSortAsc = false;
+        let currentActiveProductId = null;
+
+        // دالة الترقيم المشفرة القوية للـ ID الجديد
+        function generateUniqueId() {
+            return 'prod_' + Date.now().toString() + '_' + Math.random().toString(36).substring(2, 9);
+        }
+
+        function safeLoadProducts() {
+            try {
+                if (typeof DB !== 'undefined') {
+                    productsDB = DB.getProducts() || [];
+                } else {
+                    productsDB = JSON.parse(localStorage.getItem('seraj_products')) || [];
+                }
+                
+                let needsSave = false;
+                productsDB.forEach((p, idx) => {
+                    if (!p.id) {
+                        p.id = generateUniqueId();
+                        needsSave = true;
+                    }
+                    // ضمان وجود سعر أساسي لعدم ضياعه
+                    if (p.price === undefined) p.price = 0;
+                    if (p.purchasePrice === undefined) p.purchasePrice = 0;
+                });
+                if(needsSave) saveProductsDB();
+            } catch(e) { productsDB = []; }
+        }
+
+        function saveProductsDB() {
+            try {
+                if (typeof DB !== 'undefined') {
+                    DB.saveProducts(productsDB);
+                } else {
+                    localStorage.setItem('seraj_products', JSON.stringify(productsDB));
+                }
+            } catch (e) { console.error("Error saving to local storage."); }
+        }
+
+        function applyFallbackTheme() {
+            if (typeof DB !== 'undefined' && DB.applySavedTheme) {
+                DB.applySavedTheme();
+            } else {
+                let b = localStorage.getItem('seraj_theme_border');
+                let g = localStorage.getItem('seraj_theme_glow');
+                if(b && g) {
+                    document.documentElement.style.setProperty('--neon-border', b);
+                    document.documentElement.style.setProperty('--neon-glow', g);
+                }
+            }
+        }
+
+        window.onload = () => {
+            applyFallbackTheme();
+            safeLoadProducts();
+            renderInventoryTable();
+        };
+
+        function closeAllMenus() {
+            ['printMenuDropdown', 'excelSubMenu'].forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.style.display = 'none';
+            });
+        }
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active-view'));
+            document.getElementById(viewId).classList.add('active-view');
+            if(viewId === 'inventory-list-view') renderInventoryTable();
+        }
+
+        function togglePrintMenu(e) { 
+            e.stopPropagation(); 
+            let m = document.getElementById('printMenuDropdown'); 
+            let sub = document.getElementById('excelSubMenu');
+            if(m.style.display === 'block') {
+                m.style.display = 'none';
+                sub.style.display = 'none';
+            } else {
+                closeAllMenus();
+                m.style.display = 'block';
+            }
+        }
+
+        function toggleExcelSubMenu(e) {
+            e.stopPropagation();
+            let sub = document.getElementById('excelSubMenu');
+            sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+        }
+
+        // ================= توحيد القراءة والمحافظة على السعر عند الصفر =================
+        function getProductStock(p) {
+            return (p.lots && p.lots.length > 0) ? p.lots.reduce((sum, l) => sum + (parseFloat(l.stock) || 0), 0) : (parseFloat(p.stock) || 0);
+        }
+
+        function getProductPrice(p) {
+            if (p.lots && p.lots.length > 0) {
+                let lastP = parseFloat(p.lots[p.lots.length - 1].price);
+                return isNaN(lastP) || lastP === 0 ? (parseFloat(p.price) || 0) : lastP;
+            }
+            return parseFloat(p.price) || 0;
+        }
+
+        function getProductPurchasePrice(p) {
+            if (p.lots && p.lots.length > 0) {
+                let lastPP = parseFloat(p.lots[p.lots.length - 1].purchasePrice);
+                return isNaN(lastPP) || lastPP === 0 ? (parseFloat(p.purchasePrice) || 0) : lastPP;
+            }
+            return parseFloat(p.purchasePrice) || 0;
+        }
+        // ====================================================================
+
+        function checkAndRunAutoUnpack(p) {
+            if (!p || !p.autoParentId) return;
+            let currentStock = getProductStock(p);
+            
+            if (currentStock < 0) {
+                let parentP = productsDB.find(x => String(x.id) === String(p.autoParentId));
+                if (!parentP) return;
+
+                let rate = p.autoConversionRate || 50;
+                let deficitUnits = Math.abs(currentStock);
+                let cartonsNeeded = Math.ceil(deficitUnits / rate);
+
+                let todayStr = new Date().toISOString().split('T')[0];
+                let parentPurchasePrice = getProductPurchasePrice(parentP);
+                // السحر هنا: قسمة السعر الكلي على عدد القطع
+                let unitPurchaseCost = parentPurchasePrice > 0 ? (parentPurchasePrice / rate) : 0;
+                let currentSell = getProductPrice(p);
+                
+                let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+                if (!parentP.lots) parentP.lots = [];
+                parentP.lots.push({
+                    supplier: `فك كرتونة تلقائي لـ: ${p.name}`,
+                    stock: -cartonsNeeded,
+                    purchasePrice: parentPurchasePrice,
+                    price: getProductPrice(parentP),
+                    date: todayStr,
+                    _device: dName,
+                    _lastModifiedBy: dName
+                });
+
+                let unitsAdded = cartonsNeeded * rate;
+                if (!p.lots) p.lots = [];
+                p.lots.unshift({
+                    supplier: `إضافة تلقائية من: ${parentP.name}`,
+                    stock: unitsAdded,
+                    purchasePrice: unitPurchaseCost,
+                    price: currentSell,
+                    date: todayStr,
+                    _device: dName,
+                    _lastModifiedBy: dName
+                });
+                
+                // تحديث السعر الأساسي للصنف عشان ما يضيعش لو الرصيد بقى زيرو
+                p.purchasePrice = unitPurchaseCost;
+                p.price = currentSell;
+
+                saveProductsDB();
+            }
+        }
+
+        function sortInventory(field) {
+            if(currentSortField === field) currentSortAsc = !currentSortAsc;
+            else { currentSortField = field; currentSortAsc = false; }
+            renderInventoryTable();
+        }
+
+        function addSmartTouchLogic(tr, productId) {
+            let startY = 0;
+            let isScrolling = false;
+            let hasOpened = false;
+
+            const startPress = (e) => {
+                startY = e.touches ? e.touches[0].clientY : e.clientY;
+                isScrolling = false;
+                hasOpened = false;
+            };
+
+            const movePress = (e) => {
+                let currentY = e.touches ? e.touches[0].clientY : e.clientY;
+                if (Math.abs(currentY - startY) > 15) { 
+                    isScrolling = true;
+                }
+            };
+
+            const endPress = (e) => {
+                if (isScrolling) return;
+                
+                if(e && e.preventDefault) e.preventDefault();
+                if(e && e.stopPropagation) e.stopPropagation();
+
+                if (!hasOpened) {
+                    hasOpened = true;
+                    // تم تمرير الـ ID الأصلي مش الإندكس عشان تمنع الغلطة الكبيرة
+                    setTimeout(() => {
+                        openProductDetails(productId);
+                    }, 50);
+                }
+            };
+
+            tr.onmousedown = startPress;
+            tr.ontouchstart = startPress;
+            tr.onmousemove = movePress;
+            tr.ontouchmove = movePress;
+            tr.onclick = endPress; 
+            tr.ontouchend = endPress;
+        }
+
+function renderInventoryTable() {
+            if(typeof DB !== 'undefined') productsDB = DB.getProducts() || [];
+
+            productsDB.forEach(p => {
+                if (p.autoParentId) checkAndRunAutoUnpack(p);
+            });
+
+            const rawQuery = String(document.getElementById('inventorySearch').value || '').trim().toLowerCase();
+            const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
+
+            const tbody = document.getElementById('inventoryTableBody');
+            tbody.innerHTML = '';
+
+            let filtered = [];
+
+            // 🚨 التعديل هنا: نتجاهل أي صنف مكتوب عليه (isDeleted: true)
+            let activeProducts = productsDB.filter(p => !p.isDeleted);
+
+            if (searchWords.length === 0) {
+                filtered = activeProducts.map(p => ({ product: p, score: 0 }));
+            } else {
+                filtered = activeProducts.map(p => {
+                    let pName = String(p.name || '').toLowerCase();
+                    let pCat = String(p.category || '').toLowerCase();
+                    let pBar = String(p.barcode || '').toLowerCase();
+                    let fullString = pName + " " + pCat + " " + pBar;
+
+                    let score = 0;
+                    searchWords.forEach(word => {
+                        if (fullString.includes(word)) score += 1;
+                    });
+
+                    if (score > 0) {
+                        if (pName.startsWith(rawQuery)) score += 5; 
+                        else if (pName.startsWith(searchWords[0])) score += 2; 
+                    }
+
+                    return { product: p, score: score };
+                }).filter(item => item.score > 0); 
+            }
+
+            filtered.sort((a, b) => {
+                if (searchWords.length > 0 && b.score !== a.score) {
+                    return b.score - a.score; 
+                }
+                
+                let valA = a.product, valB = b.product;
+                if(currentSortField === 'name') {
+                    return currentSortAsc ? String(valA.name).localeCompare(String(valB.name), 'ar') : String(valB.name).localeCompare(String(valA.name), 'ar');
+                } else if(currentSortField === 'stock') {
+                    return currentSortAsc ? getProductStock(valA) - getProductStock(valB) : getProductStock(valB) - getProductStock(valA);
+                } else if(currentSortField === 'price') {
+                    return currentSortAsc ? getProductPrice(valA) - getProductPrice(valB) : getProductPrice(valB) - getProductPrice(valA);
+                }
+                return 0;
+            });
+
+            if(filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="color:#7f8c8d; padding:30px; font-weight:bold;">لا توجد منتجات مطابقة للبحث</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                let p = item.product; 
+                const tr = document.createElement('tr');
+                addSmartTouchLogic(tr, p.id);
+
+                let totalStock = getProductStock(p);
+                let displayPrice = getProductPrice(p);
+                
+                tr.innerHTML = `
+                    <td style="text-align: right; padding-right: 10px;">
+                        <strong style="color: var(--text-white);">${p.name}</strong><br>
+                        <span style="font-size:12px; color:var(--neon-border);">صنف: ${p.category || 'عام'} | كود: ${p.barcode || '---'}</span>
+                    </td>
+                    <td><span class="${totalStock > 0 ? 'val-green' : (totalStock < 0 ? 'val-red' : '')}" style="${totalStock === 0 ? 'color:#facc15;' : ''}">${totalStock.toFixed(2)}</span></td>
+                    <td class="val-green">${displayPrice.toFixed(2)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            if(document.getElementById('product-details-view').classList.contains('active-view') && currentActiveProductId) {
+                openProductDetails(currentActiveProductId);
+            }
+        }
+
+        function openAddProductModal() {
+            document.getElementById('addProdName').value = '';
+            document.getElementById('addProdCategory').value = '';
+            document.getElementById('addProdBarcode').value = '';
+            document.getElementById('addProdPurchase').value = '0';
+            document.getElementById('addProdPrice').value = '0';
+            document.getElementById('addProdStock').value = '0';
+            document.getElementById('addProductModal').style.display = 'flex';
+        }
+
+        function confirmAddProduct() {
+            let name = String(document.getElementById('addProdName').value || '').trim();
+            let category = String(document.getElementById('addProdCategory').value || '').trim() || 'عام';
+            let barcode = String(document.getElementById('addProdBarcode').value || '').trim();
+            let purchase = Math.max(0, parseFloat(document.getElementById('addProdPurchase').value) || 0);
+            let price = Math.max(0, parseFloat(document.getElementById('addProdPrice').value) || 0);
+            let stock = parseFloat(document.getElementById('addProdStock').value) || 0;
+
+            if(!name) return alert("برجاء إدخال اسم المنتج!");
+            if(price < purchase) return alert("تنبيه: سعر البيع لا يمكن أن يكون أقل من سعر الشراء!");
+
+            if(!barcode) {
+                let maxNum = 0;
+                productsDB.forEach(p => {
+                    let n = parseInt(p.barcode);
+                    if(!isNaN(n) && n > maxNum) maxNum = n;
+                });
+                barcode = String(maxNum + 1);
+            } else {
+                let exists = productsDB.some(p => String(p.barcode) === barcode);
+                if(exists) {
+                    alert("هذا الكود مستخدم مسبقاً، سيتم توليد رقم تسلسلي تلقائي.");
+                    let maxNum = 0;
+                    productsDB.forEach(p => {
+                        let n = parseInt(p.barcode);
+                        if(!isNaN(n) && n > maxNum) maxNum = n;
+                    });
+                    barcode = String(maxNum + 1);
+                }
+            }
+
+            let todayStr = new Date().toISOString().split('T')[0];
+            let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+            productsDB.push({
+                id: generateUniqueId(),
+                name: name,
+                category: category,
+                barcode: barcode,
+                autoParentId: null,
+                autoConversionRate: 50,
+                purchasePrice: purchase, // الاحتفاظ بالسعر
+                price: price, // الاحتفاظ بالسعر
+                lots: [{ supplier: 'رصيد افتتاحي', stock: stock, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName }]
+            });
+
+            saveProductsDB();
+            document.getElementById('addProductModal').style.display = 'none';
+            renderInventoryTable();
+        }
+
+        function openProductDetails(id) {
+            currentActiveProductId = id;
+            const p = productsDB.find(x => String(x.id) === String(id));
+            if(!p) return;
+
+            checkAndRunAutoUnpack(p);
+
+            document.getElementById('detProductName').innerText = p.name;
+            document.getElementById('detCategoryText').innerText = `الصنف: ${p.category || 'عام'}`;
+            document.getElementById('detBarcodeText').innerText = `الكود: ${p.barcode || '---'}`;
+
+            let parentDisp = document.getElementById('currentParentDisplay');
+            if (p.autoParentId) {
+                let parentP = productsDB.find(x => String(x.id) === String(p.autoParentId));
+                if (parentP) {
+                    parentDisp.innerText = `مربوط بـ: ${parentP.name} (يسحب ${p.autoConversionRate} قطعة)`;
+                    parentDisp.style.display = 'block';
+                } else {
+                    parentDisp.style.display = 'none';
+                }
+            } else {
+                parentDisp.style.display = 'none';
+            }
+
+            renderDetailsLots(p);
+            switchView('product-details-view');
+        }
+
+        let tempParentOptions = [];
+        
+        function openAutoParentModal(e) {
+            if(e) { e.preventDefault(); e.stopPropagation(); }
+            
+            const p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+
+            document.getElementById('parentSearchInput').value = '';
+            
+            tempParentOptions = productsDB.filter(otherP => otherP.id !== p.id);
+            
+            document.getElementById('modalAutoConversionRate').value = p.autoConversionRate || 50;
+            filterParentDropdown(); 
+            document.getElementById('autoParentModal').style.display = 'flex';
+        }
+
+        function filterParentDropdown() {
+            let query = document.getElementById('parentSearchInput').value.toLowerCase().trim();
+            let select = document.getElementById('modalAutoParentSelect');
+            
+            const p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            let currentParentId = p ? String(p.autoParentId) : null;
+
+            let optionsHtml = `<option value="">-- إلغاء الربط --</option>`;
+            
+            let filtered = tempParentOptions.filter(item => item.name.toLowerCase().includes(query) || (item.barcode && item.barcode.includes(query)));
+            
+            let displayList = filtered.slice(0, 50);
+            
+            displayList.forEach(item => {
+                let sel = (currentParentId === String(item.id)) ? 'selected' : '';
+                optionsHtml += `<option value="${item.id}" ${sel}>${item.name}</option>`;
+            });
+
+            select.innerHTML = optionsHtml;
+        }
+
+        function saveAutoParentLink() {
+            const p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+
+            let parentId = document.getElementById('modalAutoParentSelect').value;
+            let rate = parseInt(document.getElementById('modalAutoConversionRate').value) || 50;
+
+            p.autoParentId = parentId ? String(parentId) : null;
+            p.autoConversionRate = rate;
+
+            let parentDisp = document.getElementById('currentParentDisplay');
+            if (p.autoParentId) {
+                let parentP = productsDB.find(x => String(x.id) === String(p.autoParentId));
+                parentDisp.innerText = `مربوط بـ: ${parentP ? parentP.name : '---'} (يسحب ${rate} قطعة)`;
+                parentDisp.style.display = 'block';
+            } else {
+                parentDisp.style.display = 'none';
+            }
+
+            saveProductsDB(); 
+            document.getElementById('autoParentModal').style.display = 'none';
+            alert("تم الحفظ والربط الفعلي بنجاح!");
+        }
+
+function renderDetailsLots(p) {
+            // 🚨 التعديل السحري: لو الرصيد صفر، هنمسح القديم ونحتفظ بأحدث دفعة عشان السعر ميضيعش
+            if (p.lots && p.lots.length > 0) {
+                p.lots.sort((a, b) => new Date(a.date) - new Date(b.date));
+                let activeLots = p.lots.filter(l => parseFloat(l.stock) !== 0);
+                
+                // لو الدفعات كلها بقت أصفار، احتفظ بأخر دفعة فقط (أحدث واحدة)
+                if (activeLots.length === 0) {
+                    let newestLot = p.lots[p.lots.length - 1];
+                    newestLot.stock = 0; // تأكيد إنها صفر
+                    p.lots = [newestLot]; 
+                } else {
+                    p.lots = activeLots;
+                }
+            }
+            saveProductsDB(); 
+
+            const scrollableContainer = document.getElementById('detScrollableRows');
+            scrollableContainer.innerHTML = '';
+            
+            if (!p.lots || p.lots.length === 0) {
+                // الكارت ده مش هيظهر غالباً لأننا بنحتفظ بدفعة صفرية، بس سبناه كاحتياطي
+                const emptyCard = document.createElement('div');
+                emptyCard.style.cssText = "background: rgba(19, 17, 44, 0.75); padding: 15px; text-align: center; border-radius: 10px; border: 1px dashed rgba(168, 85, 247, 0.5); margin-top: 10px;";
+                emptyCard.innerHTML = `
+                    <div style="font-size: 16px; font-weight: bold; color: #facc15; margin-bottom: 10px;">المخزن فارغ حالياً</div>
+                    <div style="display: flex; justify-content: space-around;">
+                        <div>سعر الشراء المرجعي:<br><span style="font-size:18px; color:white;">${(parseFloat(p.purchasePrice)||0).toFixed(2)}</span></div>
+                        <div>سعر البيع المرجعي:<br><span style="font-size:18px; color:white;">${(parseFloat(p.price)||0).toFixed(2)}</span></div>
+                    </div>
+                `;
+                scrollableContainer.appendChild(emptyCard);
+                document.getElementById('detTotalStockBadge').innerText = "0.00";
+                document.getElementById('detTotalStockBadge').style.color = "#facc15";
+                return;
+            }
+
+            let totalStockSum = 0;
+            p.lots.forEach((lot, index) => {
+                let currentLotStock = parseFloat(lot.stock) || 0;
+                totalStockSum += currentLotStock;
+                const rowCard = document.createElement('div');
+                
+                rowCard.style.cssText = "background: rgba(19, 17, 44, 0.75); border-bottom: 1px solid rgba(168, 85, 247, 0.2); padding: 8px; display: flex; text-align: center; cursor: pointer; border-radius: 10px; margin-top: 6px; border: 1px solid rgba(168, 85, 247, 0.3); align-items:center; flex-wrap:wrap;";
+                rowCard.onclick = () => openEditLotModal(index);
+                
+                let dateStr = lot.date || '';
+                let supplierStr = lot.supplier || '';
+                let stockColor = currentLotStock > 0 ? '#00ff66' : (currentLotStock < 0 ? '#ff1a40' : '#facc15');
+
+                let devHtml = '';
+                if(lot._device) {
+                    let editTag = (lot._lastModifiedBy && lot._lastModifiedBy !== lot._device) ? `✏️ تعديل: ${lot._lastModifiedBy}` : '';
+                    devHtml = `<div style="font-size:10px; color:#38bdf8; margin-top:4px; width: 100%;">💻 ${lot._device} ${editTag}</div>`;
+                }
+
+                rowCard.innerHTML = `
+                    <div style="flex:1; text-align: right; min-width: 40%;">
+                        <div style="font-size: 20px; font-weight: bold; color:${stockColor}; text-shadow:0 0 10px rgba(0,0,0,0.5);">${currentLotStock.toFixed(2)}</div>
+                        <div style="font-size: 10px; color: #cbd5e1; margin-top: 2px;">${supplierStr}<br>${dateStr}</div>
+                    </div>
+                    <div style="flex:1; font-size: 18px; font-weight: bold; color: white;">${(parseFloat(lot.purchasePrice) || 0).toFixed(2)}</div>
+                    <div style="flex:1; font-size: 18px; font-weight: bold; color: white;">${(parseFloat(lot.price) || 0).toFixed(2)}</div>
+                    ${devHtml}
+                `;
+                scrollableContainer.appendChild(rowCard);
+            });
+
+            let badge = document.getElementById('detTotalStockBadge');
+            badge.innerText = totalStockSum.toFixed(2);
+            badge.style.color = totalStockSum > 0 ? '#00ff66' : (totalStockSum < 0 ? '#ff1a40' : '#facc15');
+        }
+
+        function openEditLotModal(index) {
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p || !p.lots[index]) return;
+            let lot = p.lots[index];
+
+            document.getElementById('editLotIndex').value = index;
+            document.getElementById('editLotStock').value = lot.stock;
+            document.getElementById('editLotPurchase').value = lot.purchasePrice;
+            document.getElementById('editLotPrice').value = lot.price;
+
+            let purInput = document.getElementById('editLotPurchase');
+            let supplierStr = String(lot.supplier || '');
+            if(supplierStr.includes('فاتورة شراء')) {
+                purInput.disabled = true;
+                purInput.style.background = 'rgba(19, 17, 44, 0.4)';
+                purInput.style.color = '#7f8c8d';
+            } else {
+                purInput.disabled = false;
+                purInput.style.background = 'rgba(19, 17, 44, 0.6)';
+                purInput.style.color = 'var(--text-white)';
+            }
+            document.getElementById('editLotModal').style.display = 'flex';
+        }
+
+        function saveEditedLot() {
+            let index = parseInt(document.getElementById('editLotIndex').value);
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p || !p.lots[index]) return;
+
+            let newStock = parseFloat(document.getElementById('editLotStock').value) || 0;
+            let newPrice = Math.max(0, parseFloat(document.getElementById('editLotPrice').value) || 0);
+            let lot = p.lots[index];
+
+            lot.stock = newStock;
+            lot.price = newPrice;
+
+            let supplierStr = String(lot.supplier || '');
+            if(!supplierStr.includes('فاتورة شراء')) {
+                let newPurchase = Math.max(0, parseFloat(document.getElementById('editLotPurchase').value) || 0);
+                lot.purchasePrice = newPurchase;
+            }
+
+            lot._lastModifiedBy = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+            p.purchasePrice = lot.purchasePrice;
+            p.price = lot.price;
+
+            saveProductsDB();
+            document.getElementById('editLotModal').style.display = 'none';
+            renderDetailsLots(p);
+            alert("تم تحديث الدفعة بنجاح!");
+        }
+
+        function openEditProductModal() {
+            const p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+            document.getElementById('editProdName').value = p.name;
+            document.getElementById('editProdCategory').value = p.category || '';
+            document.getElementById('editProdBarcode').value = p.barcode || '';
+            document.getElementById('editProductModal').style.display = 'flex';
+        }
+
+        function confirmEditProduct() {
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+            p.name = String(document.getElementById('editProdName').value || '').trim() || p.name;
+            p.category = String(document.getElementById('editProdCategory').value || '').trim() || 'عام';
+            p.barcode = String(document.getElementById('editProdBarcode').value || '').trim();
+
+            saveProductsDB();
+            document.getElementById('editProductModal').style.display = 'none';
+            
+            document.getElementById('detProductName').innerText = p.name;
+            document.getElementById('detCategoryText').innerText = `الصنف: ${p.category}`;
+            document.getElementById('detBarcodeText').innerText = `الكود: ${p.barcode || '---'}`;
+            alert("تم تحديث بيانات المنتج الأساسية بنجاح!");
+        }
+
+        function openAddLotModal() {
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+
+            document.getElementById('lotSupplier').value = '';
+            document.getElementById('lotStock').value = '1';
+
+            let lastPurchase = p.purchasePrice || 0;
+            let lastPrice = p.price || 0;
+
+            if (p.lots && p.lots.length > 0) {
+                let newestLot = p.lots[p.lots.length - 1];
+                lastPurchase = newestLot.purchasePrice || lastPurchase;
+                lastPrice = newestLot.price || lastPrice;
+            }
+
+            document.getElementById('lotPurchase').value = lastPurchase;
+            document.getElementById('lotPrice').value = lastPrice;
+
+            document.getElementById('addLotModal').style.display = 'flex';
+        }
+
+        function confirmAddLot() {
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+            let supplier = String(document.getElementById('lotSupplier').value || '').trim() || 'إضافة مباشرة';
+            let stockToAdd = parseFloat(document.getElementById('lotStock').value) || 0;
+            let purchase = Math.max(0, parseFloat(document.getElementById('lotPurchase').value) || 0);
+            let price = Math.max(0, parseFloat(document.getElementById('lotPrice').value) || 0);
+            let todayStr = new Date().toISOString().split('T')[0];
+            let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+            if(!p.lots) p.lots = [];
+
+            let currentTotalStock = getProductStock(p);
+            if (currentTotalStock < 0) {
+                let deficit = Math.abs(currentTotalStock);
+                if (stockToAdd <= deficit) {
+                    p.lots.push({ supplier: supplier + " (تغطية عجز)", stock: stockToAdd, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName });
+                    stockToAdd = 0;
+                } else {
+                    p.lots.push({ supplier: supplier + " (تغطية عجز)", stock: deficit, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName });
+                    stockToAdd -= deficit;
+                    if (stockToAdd > 0) {
+                        p.lots.push({ supplier: supplier, stock: stockToAdd, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName });
+                    }
+                }
+            } else {
+                p.lots.push({ supplier: supplier, stock: stockToAdd, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName });
+            }
+
+            p.purchasePrice = purchase;
+            p.price = price;
+
+            saveProductsDB();
+            document.getElementById('addLotModal').style.display = 'none';
+            renderDetailsLots(p);
+            alert("تمت إضافة الدفعة وتحديث الرصيد بنجاح!");
+        }
+
+        function openUpdatePriceModal() {
+            let newPrice = prompt("أدخل سعر البيع الجديد للكل:");
+            if(newPrice === null) return;
+            let val = Math.max(0, parseFloat(newPrice));
+            if(isNaN(val)) return alert("أدخل سعر صحيح!");
+
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(!p) return;
+            
+            p.price = val;
+            if(p.lots) {
+                let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+                p.lots.forEach(l => {
+                    l.price = val;
+                    l._lastModifiedBy = dName;
+                });
+            }
+
+            saveProductsDB();
+            renderDetailsLots(p);
+            alert("تم تحديث السعر الأساسي والدفعات بنجاح!");
+        }
+
+function deleteCurrentProduct() {
+            if(!confirm("هل أنت متأكد من حذف هذا المنتج نهائياً من المخزن؟")) return;
+            
+            let p = productsDB.find(x => String(x.id) === String(currentActiveProductId));
+            if(p) {
+                p.isDeleted = true; // علامة الإخفاء السحرية
+                p._lastModifiedBy = localStorage.getItem('seraj_device_name') || 'غير معروف';
+                
+                saveProductsDB(); // هيترفع للسحابة كأنه تعديل عادي جداً
+                switchView('inventory-list-view');
+                alert("تم حذف الصنف وإخفاؤه من المخزن بنجاح!");
+            }
+        }
+
+        function exportInventoryExcel() {
+            if(productsDB.length === 0) return alert("لا توجد منتجات لتصديرها!");
+            let exportData = [];
+            productsDB.forEach(p => {
+                let totalStock = getProductStock(p);
+                let avgPurchase = getProductPurchasePrice(p);
+                let displayPrice = getProductPrice(p);
+                exportData.push({
+                    "الاسم": p.name,
+                    "الصنف": p.category || 'عام',
+                    "الكود": p.barcode || '',
+                    "الرصيد": totalStock,
+                    "سعر الشراء": avgPurchase,
+                    "سعر البيع": displayPrice
+                });
+            });
+            let ws = XLSX.utils.json_to_sheet(exportData);
+            let wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "المخزن");
+            XLSX.writeFile(wb, "Store_Inventory.xlsx");
+        }
+
+        function triggerExcelImport() {
+            document.getElementById('excelFileInput').value = '';
+            document.getElementById('excelFileInput').click();
+        }
+
+        function openBulkUpdateModal() {
+            productsDB = DB.getProducts() || [];
+            if(productsDB.length === 0) return alert("المخزن فارغ!");
+
+            let categories = [...new Set(productsDB.map(p => String(p.category || 'عام').trim()))];
+            let select = document.getElementById('bulkCategorySelect');
+            select.innerHTML = '<option value="all">جميع المنتجات (المخزن بالكامل)</option>';
+            categories.forEach(cat => {
+                if(cat !== '') select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+
+            document.getElementById('bulkPercentVal').value = '';
+            document.getElementById('bulkUpdateModal').style.display = 'flex';
+        }
+
+        function applyBulkPriceUpdate() {
+            let target = document.querySelector('input[name="bulkTarget"]:checked').value; 
+            let op = document.querySelector('input[name="bulkOp"]:checked').value; 
+            let category = document.getElementById('bulkCategorySelect').value;
+            let percent = parseFloat(document.getElementById('bulkPercentVal').value);
+
+            if (isNaN(percent) || percent <= 0) return alert("برجاء إدخال نسبة مئوية صحيحة!");
+
+            let targetName = target === 'sell' ? 'أسعار البيع' : 'أسعار الشراء';
+            let opName = op === 'inc' ? 'بزيادة' : 'بنقصان';
+            let catName = category === 'all' ? 'لجميع منتجات المخزن' : `لصنف (${category})`;
+            
+            if(!confirm(`⚠️ تحذير: سيتم تعديل ${targetName} ${opName} ${percent}% ${catName}. متأكد؟`)) return;
+
+            productsDB = DB.getProducts() || [];
+            let updatedCount = 0;
+            let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+
+            productsDB.forEach(p => {
+                let pCat = String(p.category || 'عام').trim();
+                if (category === 'all' || category === pCat) {
+                    updatedCount++;
+                    const calcNewPrice = (oldPrice) => {
+                        let price = parseFloat(oldPrice) || 0;
+                        let changeAmount = price * (percent / 100);
+                        let newPrice = op === 'inc' ? (price + changeAmount) : (price - changeAmount);
+                        return Math.max(0, newPrice); 
+                    };
+
+                    if (target === 'sell') p.price = calcNewPrice(p.price);
+                    else p.purchasePrice = calcNewPrice(p.purchasePrice);
+
+                    if (p.lots && p.lots.length > 0) {
+                        p.lots.forEach(lot => {
+                            if (target === 'sell') lot.price = calcNewPrice(lot.price);
+                            else lot.purchasePrice = calcNewPrice(lot.purchasePrice);
+                            lot._lastModifiedBy = dName;
+                        });
+                    }
+                }
+            });
+
+            if (updatedCount > 0) {
+                DB.saveProducts(productsDB);
+                renderInventoryTable();
+                document.getElementById('bulkUpdateModal').style.display = 'none';
+                alert(`✅ تم تعديل الأسعار لـ ${updatedCount} منتج.`);
+            } else {
+                alert("لم يتم العثور على منتجات مطابقة.");
+            }
+        }
+
+        function handleExcelImport(e) {
+            let file = e.target.files[0];
+            if(!file) return;
+            let reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    let data = new Uint8Array(evt.target.result);
+                    let workbook = XLSX.read(data, {type: 'array'});
+                    let firstSheetName = workbook.SheetNames[0];
+                    let worksheet = workbook.Sheets[firstSheetName];
+                    let json = XLSX.utils.sheet_to_json(worksheet);
+                    
+                    if(json && json.length > 0) {
+                        let dName = localStorage.getItem('seraj_device_name') || 'غير معروف';
+                        json.forEach(item => {
+                            let name = String(item["الاسم"] || item["اسم المنتج"] || item["name"] || "منتج مستورد").trim();
+                            let category = String(item["الصنف"] || item["category"] || "عام");
+                            let barcode = String(item["الكود"] || item["الباركود"] || item["barcode"] || "");
+                            let stock = parseFloat(item["إجمالي الرصيد"] || item["الرصيد"] || item["stock"]) || 0;
+                            let purchase = parseFloat(item["سعر الشراء"] || item["purchasePrice"]) || 0;
+                            let price = parseFloat(item["سعر البيع"] || item["price"]) || 0;
+                            let todayStr = new Date().toISOString().split('T')[0];
+
+                            productsDB.push({
+                                id: generateUniqueId(),
+                                name: name,
+                                category: category,
+                                barcode: barcode,
+                                autoParentId: null,
+                                autoConversionRate: 50,
+                                purchasePrice: purchase,
+                                price: price,
+                                lots: [{ supplier: 'استيراد إكسيل', stock: stock, purchasePrice: purchase, price: price, date: todayStr, _device: dName, _lastModifiedBy: dName }]
+                            });
+                        });
+                        saveProductsDB();
+                        renderInventoryTable();
+                        alert("تم استيراد المنتجات بنجاح!");
+                    } else {
+                        alert("ملف الإكسيل فارغ!");
+                    }
+                } catch(err) {
+                    alert("حدث خطأ أثناء القراءة!");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+    </script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('تم تشغيل الأوفلاين بنجاح', reg))
+                    .catch(err => console.log('خطأ في تشغيل الأوفلاين', err));
+            });
+        }
+    </script>
+</body>
+</html>
