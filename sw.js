@@ -1,5 +1,5 @@
 // قم بتغيير اسم الإصدار (v2) لتحديث الكاش القديم عند المستخدمين
-const CACHE_NAME = 'seraj-ultimate-v544';
+const CACHE_NAME = 'seraj-test-isolated-v1';
 
 const urlsToCache = [
   '/', '/index.html', '/store.html', '/purchases.html', '/purchases_history.html',
