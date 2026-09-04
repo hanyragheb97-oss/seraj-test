@@ -1,12 +1,5 @@
-// 🌟 محرك سراج كاشير (النسخة النهائية النظيفة - تعمل بالخلفية بدون زراير)
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(function(registrations) {
-        for(let registration of registrations) { registration.unregister(); }
-    });
-}
 const firebaseConfig = {
-  apiKey: "AIzaSyASQurlODfgqRi812wwzcSGOTetYTaeUfQ",
-authDomain: "serajled.firebaseapp.com",
+    authDomain: "serajled.firebaseapp.com",
     databaseURL: "https://serajled-default-rtdb.firebaseio.com",
     projectId: "serajled",
     storageBucket: "serajled.firebasestorage.app",
@@ -18,8 +11,8 @@ authDomain: "serajled.firebaseapp.com",
 let cloudReady = false;
 let myDeviceName = localStorage.getItem('seraj_device_name');
 if (!myDeviceName) {
-    myDeviceName = prompt("مرحباً بك في سراج كاشير 🤖\nبرجاء إدخال اسم مميز لهذا الجهاز:");
-    if (!myDeviceName || myDeviceName.trim() === "") myDeviceName = "جهاز غير معروف";
+    myDeviceName = prompt("مرحباً بك في نسخة التجارب (سراج كاشير) 🛠️\nبرجاء إدخال اسم مميز لهذا الجهاز:");
+    if (!myDeviceName || myDeviceName.trim() === "") myDeviceName = "جهاز تجريبي";
     localStorage.setItem('seraj_device_name', myDeviceName);
 }
 
@@ -37,7 +30,7 @@ function initCloud() {
             firebase.initializeApp(firebaseConfig);
             window.dbCloud = firebase.database();
             cloudReady = true;
-            showCloudStatus('🟢 متصل (السحابة الجديدة) ⚡');
+            showCloudStatus('🧪 متصل (بيئة التجارب المعزولة) ⚡');
             startSmartRadars(); 
         };
     };
@@ -48,12 +41,12 @@ function showCloudStatus(msg) {
     if(!el) {
         el = document.createElement('div');
         el.id = 'cloud-sync-status';
-        el.style.cssText = 'position:fixed; bottom:15px; right:15px; background:rgba(0,0,0,0.9); color:#00ff66; padding:8px 16px; border-radius:20px; font-size:14px; font-weight:bold; z-index:99999; border: 1px solid var(--neon-border); pointer-events: none; transition: all 0.3s ease;';
+        el.style.cssText = 'position:fixed; bottom:15px; right:15px; background:rgba(0,0,0,0.9); color:#f59e0b; padding:8px 16px; border-radius:20px; font-size:14px; font-weight:bold; z-index:99999; border: 1px solid var(--neon-border); pointer-events: none; transition: all 0.3s ease;';
         document.body.appendChild(el);
     }
     el.innerText = msg;
-    if(msg.includes('🟢') || msg.includes('✅')) {
-        el.style.color = '#00ff66';
+    if(msg.includes('🟢') || msg.includes('✅') || msg.includes('🧪')) {
+        el.style.color = '#f59e0b';
         setTimeout(() => { el.style.opacity = '0'; }, 3000);
     } else {
         el.style.color = '#ff9800';
@@ -61,7 +54,6 @@ function showCloudStatus(msg) {
     }
 }
 
-// 🛡️ نظام الذاكرة المجمعة لتحديث الشاشة بدون تهنيج
 let memoryCache = {};
 let memoryTypes = {};
 let saveTimers = {};
@@ -71,13 +63,14 @@ function startSmartRadars() {
     const collections = ['products', 'customers', 'sales_invoices', 'suppliers', 'purchase_invoices', 'treasury_moves'];
     
     collections.forEach(col => {
-        let ref = window.dbCloud.ref(col);
+        let cloudRefName = 'test_' + col; 
+        let ref = window.dbCloud.ref(cloudRefName);
         ref.on('child_added', snap => queueChange(col, snap.val(), 'added'));
         ref.on('child_changed', snap => queueChange(col, snap.val(), 'modified'));
         ref.on('child_removed', snap => queueChange(col, {id: snap.key}, 'removed'));
     });
 
-    window.dbCloud.ref('vaults_v2').on('value', snapshot => {
+    window.dbCloud.ref('test_vaults_v2').on('value', snapshot => {
         if (snapshot.exists()) {
             localStorage.setItem('seraj_vaults_v2', JSON.stringify(snapshot.val()));
             if(typeof updateTreasuryUI === 'function') updateTreasuryUI();
@@ -142,7 +135,6 @@ function flushToStorage(col) {
     memoryTypes[col] = {};
 }
 
-// نظام الرفع السريع للعمليات الجديدة
 function saveArrayToCloudSafely(colName, newArray) {
     if(!cloudReady || !navigator.onLine) {
         localStorage.setItem('seraj_cloud_cache_' + colName, JSON.stringify(newArray));
@@ -165,7 +157,8 @@ function saveArrayToCloudSafely(colName, newArray) {
     });
 
     if(opCount > 0) {
-        window.dbCloud.ref(colName).update(updates).then(() => {
+        let cloudRefName = 'test_' + colName;
+        window.dbCloud.ref(cloudRefName).update(updates).then(() => {
             localStorage.setItem('seraj_cloud_cache_' + colName, JSON.stringify(newArray));
         }).catch(e => {});
     }
@@ -179,7 +172,6 @@ const DB = {
     saveCustomers: function(data) { localStorage.setItem('seraj_customers', JSON.stringify(data)); saveArrayToCloudSafely('customers', data); },
     getSalesInvoices: function() { return JSON.parse(localStorage.getItem('seraj_sales_invoices')) || []; },
    saveSalesInvoices: function(data) { 
-        // الكود ده بيدي وقت مخفي بالمللي ثانية لأي فاتورة جديدة أوتوماتيك
         data.forEach(inv => { if (!inv.timestamp) inv.timestamp = Date.now(); });
         localStorage.setItem('seraj_sales_invoices', JSON.stringify(data)); 
         saveArrayToCloudSafely('sales_invoices', data); 
@@ -191,12 +183,14 @@ const DB = {
     getTreasuryMoves: function() { return JSON.parse(localStorage.getItem('seraj_treasury_moves')) || []; },
     saveTreasuryMoves: function(data) { localStorage.setItem('seraj_treasury_moves', JSON.stringify(data)); saveArrayToCloudSafely('treasury_moves', data); },
     getVaults: function() { return JSON.parse(localStorage.getItem('seraj_vaults_v2')) || { main: 0, insta: 0, wallet: 0 }; },
-    saveVaults: function(data) { localStorage.setItem('seraj_vaults_v2', JSON.stringify(data)); if(cloudReady) window.dbCloud.ref('vaults_v2').set(data); },
+    saveVaults: function(data) { 
+        localStorage.setItem('seraj_vaults_v2', JSON.stringify(data)); 
+        if(cloudReady) window.dbCloud.ref('test_vaults_v2').set(data); 
+    },
     applySavedTheme: function() {}
 };
 
 initCloud();
-// تحديث شامل لألوان الثيمات في كل البرنامج
 DB.applySavedTheme = function() {
     let b = localStorage.getItem('seraj_theme_border');
     let g = localStorage.getItem('seraj_theme_glow');
