@@ -2,7 +2,11 @@
 // المحاسب الذكي - النسخة الآمنة والذكية
 // ==========================================
 
-const GEMINI_API_KEY = "AQ.Ab8RN6IelCYm560_ur5S6x_JqBEElAhddHD-mrZrQ5bha_zgqA"; 
+const API_KEY = localStorage.getItem('seraj_ai_key');
+
+if (!API_KEY) {
+    alert("برجاء إدخال مفتاح الذكاء الاصطناعي من شاشة الإعدادات (الترس ⚙️) أولاً!");
+}
 
 let isManagerMode = false;
 let recognition;
