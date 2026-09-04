@@ -259,33 +259,56 @@ body {
         </div>
     </div>
 
-    <script>
-        // التحقق من وجود تسجيل دخول مسبق
-        document.addEventListener("DOMContentLoaded", () => {
-            let savedStoreId = localStorage.getItem('seraj_store_id');
-            if(savedStoreId) {
-                // لو مسجل دخول قبل كده، الشاشة دي تختفي ويفتح البرنامج
-                document.getElementById('seraj-login-screen').style.display = 'none';
-            }
-        });
-
-        function loginToStore() {
-            let id = document.getElementById('store-id-input').value.trim();
-            let pass = document.getElementById('store-pass-input').value.trim();
-            
-            if(id === "" || pass === "") {
-                document.getElementById('login-error').innerText = "برجاء إدخال الكود وكلمة المرور!";
-                document.getElementById('login-error').style.display = "block";
-                return;
-            }
-            
-            // مؤقتاً: بنحفظ البيانات دي عشان نربطها بالفايربيز في الخطوة الجاية
-            localStorage.setItem('seraj_store_id', id);
-            localStorage.setItem('seraj_store_pass', pass);
-            
-            // إخفاء الشاشة وعمل ريفريش لتحميل بيانات هذا المحل فقط
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let savedStoreId = localStorage.getItem('seraj_store_id');
+        if(savedStoreId) {
             document.getElementById('seraj-login-screen').style.display = 'none';
-            window.location.reload();
         }
-    </script>   
+    });
+
+    function loginToStore() {
+        let id = document.getElementById('store-id-input').value.trim();
+        let pass = document.getElementById('store-pass-input').value.trim();
+        let errorMsg = document.getElementById('login-error');
+        
+        if(id === "" || pass === "") {
+            errorMsg.innerText = "برجاء إدخال الكود وكلمة المرور!";
+            errorMsg.style.display = "block";
+            return;
+        }
+
+        // إظهار رسالة تحميل
+        errorMsg.innerText = "جاري التحقق من البيانات... ⏳";
+        errorMsg.style.display = "block";
+        errorMsg.style.color = "#f59e0b";
+
+        // التحقق من صحة البيانات من الفايربيز
+        if (window.dbCloud) {
+            window.dbCloud.ref('Admin_Users/' + id).once('value').then((snapshot) => {
+                if (snapshot.exists()) {
+                    let realPass = snapshot.val().password;
+                    if (pass === realPass) {
+                        // البيانات صحيحة 100%
+                        localStorage.setItem('seraj_store_id', id);
+                        localStorage.setItem('seraj_store_pass', pass);
+                        document.getElementById('seraj-login-screen').style.display = 'none';
+                        window.location.reload();
+                    } else {
+                        errorMsg.innerText = "كلمة المرور غير صحيحة ❌";
+                        errorMsg.style.color = "#ff4444";
+                    }
+                } else {
+                    errorMsg.innerText = "كود المحل غير مسجل لدينا ❌";
+                    errorMsg.style.color = "#ff4444";
+                }
+            }).catch((error) => {
+                errorMsg.innerText = "حدث خطأ في الاتصال بالسحابة!";
+                errorMsg.style.color = "#ff4444";
+            });
+        } else {
+            errorMsg.innerText = "جاري الاتصال بالسحابة، حاول بعد ثانية...";
+        }
+    }
+</script> 
 </html>
