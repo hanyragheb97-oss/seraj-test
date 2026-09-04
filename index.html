@@ -238,4 +238,54 @@ body {
     </script>
    <script src="ai_brain.js?v=600"></script>
 </body>
+ <!-- 🔐 شاشة تسجيل الدخول المركزية -->
+    <div id="seraj-login-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-dark-1, #121212); z-index:999999; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family: 'Tajawal', sans-serif;">
+        <div style="background:var(--card-bg, #1e1e1e); padding:40px; border-radius:15px; border:1px solid var(--neon-border, #00ff66); box-shadow:0 0 20px var(--neon-glow, rgba(0,255,102,0.2)); text-align:center; width:90%; max-width:400px;">
+            
+            <!-- لوجو أو اسم البرنامج -->
+            <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
+            <h2 style="color:var(--text-main, #fff); margin-bottom:5px;">سراج كاشير</h2>
+            <p style="color:#aaa; font-size:14px; margin-bottom:25px;">برجاء تسجيل الدخول للوصول لبيانات متجرك</p>
+            
+            <!-- حقول الإدخال -->
+            <input type="text" id="store-id-input" placeholder="كود المحل (ID)" style="width:100%; padding:15px; margin-bottom:15px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
+            <input type="password" id="store-pass-input" placeholder="كلمة المرور" style="width:100%; padding:15px; margin-bottom:25px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
+            
+            <!-- زر الدخول -->
+            <button onclick="loginToStore()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; transition: transform 0.2s;">تسجيل الدخول 🚀</button>
+            
+            <!-- رسالة الخطأ -->
+            <p id="login-error" style="color:#ff4444; margin-top:15px; display:none; font-weight:bold;">بيانات الدخول غير صحيحة!</p>
+        </div>
+    </div>
+
+    <script>
+        // التحقق من وجود تسجيل دخول مسبق
+        document.addEventListener("DOMContentLoaded", () => {
+            let savedStoreId = localStorage.getItem('seraj_store_id');
+            if(savedStoreId) {
+                // لو مسجل دخول قبل كده، الشاشة دي تختفي ويفتح البرنامج
+                document.getElementById('seraj-login-screen').style.display = 'none';
+            }
+        });
+
+        function loginToStore() {
+            let id = document.getElementById('store-id-input').value.trim();
+            let pass = document.getElementById('store-pass-input').value.trim();
+            
+            if(id === "" || pass === "") {
+                document.getElementById('login-error').innerText = "برجاء إدخال الكود وكلمة المرور!";
+                document.getElementById('login-error').style.display = "block";
+                return;
+            }
+            
+            // مؤقتاً: بنحفظ البيانات دي عشان نربطها بالفايربيز في الخطوة الجاية
+            localStorage.setItem('seraj_store_id', id);
+            localStorage.setItem('seraj_store_pass', pass);
+            
+            // إخفاء الشاشة وعمل ريفريش لتحميل بيانات هذا المحل فقط
+            document.getElementById('seraj-login-screen').style.display = 'none';
+            window.location.reload();
+        }
+    </script>   
 </html>
