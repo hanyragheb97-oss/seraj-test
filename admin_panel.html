@@ -3,64 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سراج - لوحة تحكم الإدارة</title>
+    <title>سراج - لوحة التحكم المركزية</title>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
-        body { background-color: #121212; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .admin-box { background: #1e1e1e; padding: 40px; border-radius: 10px; border: 2px solid #f59e0b; text-align: center; width: 300px; box-shadow: 0 0 15px rgba(245, 158, 11, 0.2); }
+        body { background-color: #121212; color: #fff; font-family: sans-serif; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .admin-box { background: #1e1e1e; padding: 30px; border-radius: 10px; border: 2px solid #f59e0b; text-align: center; width: 100%; max-width: 600px; margin-bottom: 20px; }
         input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 5px; border: 1px solid #555; background: #333; color: white; text-align: center; }
-        button { width: 95%; padding: 10px; background: #f59e0b; color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; margin-top: 15px; }
-        #status-msg { margin-top: 15px; font-weight: bold; height: 20px; }
+        button { padding: 10px 20px; background: #f59e0b; color: black; font-weight: bold; border: none; border-radius: 5px; cursor: pointer; }
+        table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+        th, td { padding: 12px; border: 1px solid #444; text-align: center; }
+        th { background: #333; color: #f59e0b; }
+        .btn-suspend { background: #ff4444; color: white; }
+        .btn-activate { background: #00ff66; color: black; }
     </style>
 </head>
 <body>
 
     <div class="admin-box">
-        <h2 style="color: #f59e0b;">🛡️ لوحة التحكم السرية</h2>
-        <p style="font-size: 14px; color: #aaa;">إضافة محل جديد لقاعدة البيانات</p>
-        
-        <input type="text" id="new-store-id" placeholder="كود المحل (ID)">
+        <h2 style="color: #f59e0b;">🛡️ إضافة عميل جديد</h2>
+        <input type="text" id="new-store-id" placeholder="كود المحل (مثال: 100)">
         <input type="text" id="new-store-pass" placeholder="كلمة المرور">
-        
-        <button onclick="createNewStore()">إضافة المحل الآن</button>
-        <div id="status-msg"></div>
+        <button onclick="createNewStore()" style="width: 95%; margin-top: 15px;">إضافة وتفعيل الحساب</button>
+        <div id="status-msg" style="margin-top: 15px; font-weight: bold;"></div>
+    </div>
+
+    <div class="admin-box">
+        <h2 style="color: #00ff66;">📋 قائمة العملاء والاشتراكات</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>كود المحل</th>
+                    <th>كلمة المرور</th>
+                    <th>الحالة</th>
+                    <th>التحكم</th>
+                </tr>
+            </thead>
+            <tbody id="clients-table">
+                <!-- سيتم تحميل العملاء هنا -->
+            </tbody>
+        </table>
     </div>
 
     <script>
-        // إعدادات قاعدة بياناتك (serajled)
-        const firebaseConfig = {
-            databaseURL: "https://serajled-default-rtdb.firebaseio.com",
-        };
+        const firebaseConfig = { databaseURL: "https://serajled-default-rtdb.firebaseio.com" };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
         function createNewStore() {
-            let storeId = document.getElementById('new-store-id').value.trim();
-            let storePass = document.getElementById('new-store-pass').value.trim();
+            let id = document.getElementById('new-store-id').value.trim();
+            let pass = document.getElementById('new-store-pass').value.trim();
             let msg = document.getElementById('status-msg');
 
-            if(storeId === "" || storePass === "") {
-                msg.innerText = "برجاء إدخال الكود والباسورد!";
-                msg.style.color = "#ff4444";
-                return;
-            }
-
-            msg.innerText = "جاري الإضافة... ⏳";
-            msg.style.color = "#f59e0b";
-
-            // إضافة العميل لفايربيز
-            db.ref('Admin_Users/' + storeId).set({
-                password: storePass
-            }).then(() => {
-                msg.innerText = "✅ تم تسجيل المحل بنجاح!";
+            if(id === "" || pass === "") return (msg.innerText = "اكتب الكود والباسورد!");
+            
+            db.ref('Admin_Users/' + id).set({ password: pass, status: 'active' }).then(() => {
+                msg.innerText = "✅ تم إضافة الحساب بنجاح!";
                 msg.style.color = "#00ff66";
-                document.getElementById('new-store-id').value = "";
-                document.getElementById('new-store-pass').value = "";
-            }).catch((error) => {
-                msg.innerText = "❌ حدث خطأ في الاتصال!";
-                msg.style.color = "#ff4444";
             });
+        }
+
+        // جلب العملاء وعرضهم في الجدول
+        db.ref('Admin_Users').on('value', (snapshot) => {
+            let tbody = document.getElementById('clients-table');
+            tbody.innerHTML = "";
+            
+            snapshot.forEach((child) => {
+                let id = child.key;
+                let data = child.val();
+                let statusText = data.status === 'suspended' ? '🔴 موقوف' : '🟢 نشط';
+                let btnHtml = data.status === 'suspended' 
+                    ? `<button class="btn-activate" onclick="toggleStatus('${id}', 'active')">تفعيل</button>`
+                    : `<button class="btn-suspend" onclick="toggleStatus('${id}', 'suspended')">إيقاف</button>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-size:18px; font-weight:bold;">${id}</td>
+                        <td>${data.password}</td>
+                        <td>${statusText}</td>
+                        <td>${btnHtml}</td>
+                    </tr>
+                `;
+            });
+        });
+
+        // تغيير حالة الحساب (إيقاف / تشغيل)
+        function toggleStatus(id, newStatus) {
+            db.ref('Admin_Users/' + id).update({ status: newStatus });
         }
     </script>
 </body>
