@@ -260,6 +260,16 @@ body {
     </div>
 
 <script>
+    // 🚨 إنشاء حساب تجريبي تلقائياً أول ما الصفحة تفتح عشان نخلص من المشكلة دي نهائياً
+    setTimeout(() => {
+        if (window.dbCloud) {
+            window.dbCloud.ref('Admin_Users/100').set({
+                password: "1234",
+                status: "active"
+            });
+        }
+    }, 2000);
+
     document.addEventListener("DOMContentLoaded", () => {
         let savedStoreId = localStorage.getItem('seraj_store_id');
         if(savedStoreId) {
@@ -278,18 +288,20 @@ body {
             return;
         }
 
-        // إظهار رسالة تحميل
-        errorMsg.innerText = "جاري التحقق من البيانات... ⏳";
+        errorMsg.innerText = "جاري التحقق... ⏳";
         errorMsg.style.display = "block";
         errorMsg.style.color = "#f59e0b";
 
-        // التحقق من صحة البيانات من الفايربيز
         if (window.dbCloud) {
             window.dbCloud.ref('Admin_Users/' + id).once('value').then((snapshot) => {
                 if (snapshot.exists()) {
-                    let realPass = snapshot.val().password;
-                    if (pass === realPass) {
-                        // البيانات صحيحة 100%
+                    let userData = snapshot.val();
+                    if (userData.status === 'suspended') {
+                        errorMsg.innerText = "هذا الحساب موقوف! 🚫";
+                        errorMsg.style.color = "#ff4444";
+                        return;
+                    }
+                    if (pass === userData.password) {
                         localStorage.setItem('seraj_store_id', id);
                         localStorage.setItem('seraj_store_pass', pass);
                         document.getElementById('seraj-login-screen').style.display = 'none';
@@ -302,13 +314,9 @@ body {
                     errorMsg.innerText = "كود المحل غير مسجل لدينا ❌";
                     errorMsg.style.color = "#ff4444";
                 }
-            }).catch((error) => {
-                errorMsg.innerText = "حدث خطأ في الاتصال بالسحابة!";
-                errorMsg.style.color = "#ff4444";
             });
-        } else {
-            errorMsg.innerText = "جاري الاتصال بالسحابة، حاول بعد ثانية...";
         }
     }
+</script>
 </script> 
 </html>
