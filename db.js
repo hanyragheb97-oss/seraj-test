@@ -1,4 +1,11 @@
+// 🌟 محرك سراج كاشير (النسخة النهائية النظيفة - تعمل بالخلفية بدون زراير)
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for(let registration of registrations) { registration.unregister(); }
+    });
+}
 const firebaseConfig = {
+  apiKey: "AIzaSyASQurlODfgqRi812wwzcSGOTetYTaeUfQ",
     authDomain: "serajled.firebaseapp.com",
     databaseURL: "https://serajled-default-rtdb.firebaseio.com",
     projectId: "serajled",
