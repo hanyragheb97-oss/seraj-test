@@ -23,6 +23,9 @@ if (!myDeviceName) {
     localStorage.setItem('seraj_device_name', myDeviceName);
 }
 
+// 🚨 سحب كود المحل (ID) لتوجيه البيانات
+let currentStoreId = localStorage.getItem('seraj_store_id') || 'DemoStore';
+
 function initCloud() {
     let s1 = document.createElement('script');
     s1.src = "https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js";
@@ -37,7 +40,7 @@ function initCloud() {
             firebase.initializeApp(firebaseConfig);
             window.dbCloud = firebase.database();
             cloudReady = true;
-            showCloudStatus('🧪 متصل (بيئة التجارب المعزولة) ⚡');
+            showCloudStatus('🧪 متصل بمحل: ' + currentStoreId + ' ⚡');
             startSmartRadars(); 
         };
     };
@@ -52,12 +55,9 @@ function showCloudStatus(msg) {
         document.body.appendChild(el);
     }
     el.innerText = msg;
-    if(msg.includes('🟢') || msg.includes('✅') || msg.includes('🧪')) {
+    if(msg.includes('🧪')) {
         el.style.color = '#f59e0b';
         setTimeout(() => { el.style.opacity = '0'; }, 3000);
-    } else {
-        el.style.color = '#ff9800';
-        el.style.opacity = '1';
     }
 }
 
@@ -70,14 +70,15 @@ function startSmartRadars() {
     const collections = ['products', 'customers', 'sales_invoices', 'suppliers', 'purchase_invoices', 'treasury_moves'];
     
     collections.forEach(col => {
-        let cloudRefName = 'test_' + col; 
+        // 🚨 التوجيه الذكي: إنشاء مجلد خاص بكل محل داخل الفايربيز
+        let cloudRefName = 'test_Stores/' + currentStoreId + '/' + col; 
         let ref = window.dbCloud.ref(cloudRefName);
         ref.on('child_added', snap => queueChange(col, snap.val(), 'added'));
         ref.on('child_changed', snap => queueChange(col, snap.val(), 'modified'));
         ref.on('child_removed', snap => queueChange(col, {id: snap.key}, 'removed'));
     });
 
-    window.dbCloud.ref('test_vaults_v2').on('value', snapshot => {
+    window.dbCloud.ref('test_Stores/' + currentStoreId + '/vaults_v2').on('value', snapshot => {
         if (snapshot.exists()) {
             localStorage.setItem('seraj_vaults_v2', JSON.stringify(snapshot.val()));
             if(typeof updateTreasuryUI === 'function') updateTreasuryUI();
@@ -164,7 +165,7 @@ function saveArrayToCloudSafely(colName, newArray) {
     });
 
     if(opCount > 0) {
-        let cloudRefName = 'test_' + colName;
+        let cloudRefName = 'test_Stores/' + currentStoreId + '/' + colName;
         window.dbCloud.ref(cloudRefName).update(updates).then(() => {
             localStorage.setItem('seraj_cloud_cache_' + colName, JSON.stringify(newArray));
         }).catch(e => {});
@@ -192,7 +193,7 @@ const DB = {
     getVaults: function() { return JSON.parse(localStorage.getItem('seraj_vaults_v2')) || { main: 0, insta: 0, wallet: 0 }; },
     saveVaults: function(data) { 
         localStorage.setItem('seraj_vaults_v2', JSON.stringify(data)); 
-        if(cloudReady) window.dbCloud.ref('test_vaults_v2').set(data); 
+        if(cloudReady) window.dbCloud.ref('test_Stores/' + currentStoreId + '/vaults_v2').set(data); 
     },
     applySavedTheme: function() {}
 };
