@@ -327,10 +327,25 @@ body {
         }
     }, 2000);
 
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
         let savedStoreId = localStorage.getItem('seraj_store_id');
         if(savedStoreId) {
             document.getElementById('seraj-login-screen').style.display = 'none';
+            
+            // 🚨 الحارس اللحظي: يراقب حالة الحساب باستمرار من الفايربيز
+            setTimeout(() => {
+                if (window.dbCloud) {
+                    window.dbCloud.ref('Admin_Users/' + savedStoreId + '/status').on('value', (snapshot) => {
+                        if (snapshot.val() === 'suspended') {
+                            // مسح بيانات الدخول وطرد العميل فوراً
+                            localStorage.removeItem('seraj_store_id');
+                            localStorage.removeItem('seraj_store_pass');
+                            alert("⚠️ تم إيقاف اشتراكك! برجاء التواصل مع الإدارة.");
+                            window.location.reload(); 
+                        }
+                    });
+                }
+            }, 1000); // تأخير ثانية لضمان تحميل الاتصال
         }
     });
 
