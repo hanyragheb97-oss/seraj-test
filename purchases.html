@@ -616,7 +616,7 @@
             renderTable();
         }
 
-        function renderTable() {
+function renderTable() {
             const tbody = document.getElementById('invoiceItems');
             tbody.innerHTML = ''; let subTotal = 0;
             
@@ -629,42 +629,79 @@
                 const tr = document.createElement('tr');
                 tr.className = 'swipe-row';
                 
-                let startX = 0; let currentX = 0; let isDragging = false; let pressTimer = null; let isLongPress = false;
+                // متغيرات التاتش المضبوطة
+                let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
+                let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
 
-                const onStart = (clientX) => {
-                    startX = clientX; currentX = startX; isDragging = true; isLongPress = false;
+                const startAction = (x, y) => {
+                    startX = x; startY = y; 
+                    isDown = true; isSwiping = false; isLongPress = false; isScrolling = false;
+                    startTime = Date.now();
+                    tr.style.transition = 'none';
+                    
+                    // ضغطة طويلة (ثانية كاملة)
                     pressTimer = setTimeout(() => {
-                        if (isDragging && Math.abs(currentX - startX) < 10) { 
-                            isDragging = false; 
-                            isLongPress = true;
-                            openEditModal(index);
-                        }
-                    }, 500); 
+                        if (isScrolling || isSwiping) return; 
+                        isLongPress = true; isDown = false; 
+                        openEditModal(index);
+                    }, 1000); 
                 };
 
-                const onMove = (clientX) => {
-                    if (!isDragging) return;
-                    currentX = clientX; let diff = currentX - startX;
-                    if (Math.abs(diff) > 15) {
+                const moveAction = (x, y) => {
+                    if (!isDown) return;
+                    let diffX = x - startX;
+                    let diffY = y - startY;
+                    
+                    // اكتشاف السكرول
+                    if (Math.abs(diffY) > 8) { 
+                        isScrolling = true; 
                         clearTimeout(pressTimer); 
-                        tr.style.transform = `translateX(${diff}px)`; 
-                        tr.style.opacity = `${1 - Math.abs(diff) / 300}`;
+                        return; 
+                    }
+
+                    // السحب الجانبي للحذف
+                    if (Math.abs(diffX) > 15 && !isScrolling) { 
+                        isSwiping = true; 
+                        clearTimeout(pressTimer); 
+                        tr.style.transform = `translateX(${diffX}px)`; 
+                        tr.style.opacity = `${1 - Math.abs(diffX) / 300}`;
                     }
                 };
 
-                const onEnd = () => {
-                    if (!isDragging) return;
-                    isDragging = false; clearTimeout(pressTimer); let diff = currentX - startX;
+                const endAction = (x, y) => {
+                    if (!isDown && !isSwiping) return; 
+                    isDown = false; clearTimeout(pressTimer); 
                     
-                    if (Math.abs(diff) > 90) {
-                        tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-                        tr.style.transform = `translateX(${diff > 0 ? 100 : -100}%)`; tr.style.opacity = '0';
-                        setTimeout(() => { invoice.splice(index, 1); saveDraft(); renderTable(); }, 250);
-                    } else {
-                        tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                        tr.style.transform = 'translateX(0)'; tr.style.opacity = '1';
-                        
-                        if (Math.abs(diff) < 10 && !isLongPress) {
+                    let touchDuration = Date.now() - startTime;
+                    let finalDiffX = Math.abs(x - startX);
+                    let finalDiffY = Math.abs(y - startY);
+
+                    if (isScrolling) {
+                        tr.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
+                        tr.style.transform = 'translateX(0)';
+                        tr.style.opacity = '1';
+                        return; 
+                    }
+
+                    if (isSwiping) {
+                        let diffX = x - startX;
+                        if (Math.abs(diffX) > 90) {
+                            tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+                            tr.style.transform = `translateX(${diffX > 0 ? 100 : -100}%)`; 
+                            tr.style.opacity = '0';
+                            setTimeout(() => { invoice.splice(index, 1); saveDraft(); renderTable(); }, 250);
+                        } else {
+                            tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                            tr.style.transform = 'translateX(0)'; 
+                            tr.style.opacity = '1';
+                        }
+                    } else if (!isLongPress) {
+                        // الزيادة بكليك سريعة جداً بدون حركة
+                        if (touchDuration < 300 && finalDiffX < 10 && finalDiffY < 10) {
+                            tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                            tr.style.transform = 'translateX(0)'; 
+                            tr.style.opacity = '1';
+
                             let updatedItem = invoice.splice(index, 1)[0];
                             updatedItem.qty += 1;
                             invoice.unshift(updatedItem); 
@@ -672,16 +709,16 @@
                             renderTable();
                         }
                     }
+                    isSwiping = false; isScrolling = false;
                 };
 
-                tr.onmousedown = (e) => { onStart(e.clientX); }; 
-                tr.onmousemove = (e) => { onMove(e.clientX); };
-                tr.onmouseup = (e) => { onEnd(); }; 
-                tr.onmouseleave = (e) => { if(isDragging) onEnd(); };
-                
-                tr.ontouchstart = (e) => { onStart(e.touches[0].clientX); }; 
-                tr.ontouchmove = (e) => { onMove(e.touches[0].clientX); }; 
-                tr.ontouchend = (e) => { onEnd(); };
+                tr.ontouchstart = (e) => { startAction(e.touches[0].clientX, e.touches[0].clientY); };
+                tr.ontouchmove = (e) => { moveAction(e.touches[0].clientX, e.touches[0].clientY); };
+                tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); };
+                tr.onmousedown = (e) => { startAction(e.clientX, e.clientY); };
+                tr.onmousemove = (e) => { moveAction(e.clientX, e.clientY); };
+                tr.onmouseup = (e) => { endAction(e.clientX, e.clientY); };
+                tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX, e.clientY); };
 
                 tr.innerHTML = `
                     <td style="text-align: right; font-weight:bold; color: var(--text-white);">${item.name}</td>
