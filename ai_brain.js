@@ -2,12 +2,6 @@
 // المحاسب الذكي - النسخة الآمنة والذكية
 // ==========================================
 
-const API_KEY = localStorage.getItem('seraj_ai_key');
-
-if (!API_KEY) {
-    alert("برجاء إدخال مفتاح الذكاء الاصطناعي من شاشة الإعدادات (الترس ⚙️) أولاً!");
-}
-
 let isManagerMode = false;
 let recognition;
 let currentImageData = null; 
@@ -368,9 +362,23 @@ async function sendMessage() {
             requestContents.push({ inline_data: { mime_type: imgDataForApi.mime_type, data: imgDataForApi.data } });
         }
 
-        const cleanKey = GEMINI_API_KEY.replace(/[^a-zA-Z0-9_.\-]/g, ''); 
-        const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=" + cleanKey;
+// 1. استدعاء المفتاح من الذاكرة في نفس لحظة الإرسال
+        let savedKey = localStorage.getItem('seraj_ai_key');
 
+        // 2. إيقاف الإرسال وتنبيه المستخدم إذا كان المفتاح غير موجود
+        if (!savedKey || savedKey.trim() === "") {
+            let errorMsg = "❌ برجاء إدخال مفتاح الذكاء الاصطناعي من شاشة الإعدادات (الترس ⚙️) أولاً!";
+            document.getElementById(loaderId).parentElement.innerHTML = errorMsg;
+            saveHistory('bot', errorMsg, null);
+            speakArabic("برجاء إدخال المفتاح من الإعدادات");
+            return;
+        }
+
+        // 3. تنظيف المفتاح وتجهيز الرابط
+        const cleanKey = savedKey.replace(/[^a-zA-Z0-9_.\-]/g, ''); 
+        const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + cleanKey;
+
+        // 4. إرسال الطلب لجوجل
         const response = await fetch(finalUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -386,7 +394,6 @@ async function sendMessage() {
             speakArabic("الرجاء الانتظار قليلاً ثم المحاولة");
             return;
         }
-
         const reply = data.candidates[0].content.parts[0].text;
         let messageBox = document.getElementById(loaderId).parentElement;
         
