@@ -234,34 +234,30 @@
     <script src="db.js"></script>
     <script src="ai_brain.js?v=600"></script>
     
-    <script>
-// إخفاء الشاشة الافتتاحية بذكاء (لا تظهر عند الرجوع)
-        window.addEventListener('load', () => {
+<script>
+        // كود الشاشة الافتتاحية الذكي (يفرق بين الريفريش وزر الرجوع)
+        window.addEventListener('pageshow', (event) => {
             let splash = document.getElementById('splash-screen');
-            let isBackNavigation = false;
+            if (!splash) return;
 
-            // التحقق هل العميل فتح الصفحة بـ (رجوع) أم تحميل جديد/ريفريش
-            if (window.performance && window.performance.getEntriesByType) {
-                let navEntries = window.performance.getEntriesByType("navigation");
-                if (navEntries.length > 0 && navEntries[0].type === "back_forward") {
-                    isBackNavigation = true;
-                }
-            }
+            // التحقق القاطع: هل العميل ضغط على زر "الرجوع"؟
+            let isBackBtn = event.persisted || 
+                            (window.performance && window.performance.navigation && window.performance.navigation.type === 2) ||
+                            (window.performance && window.performance.getEntriesByType("navigation").length > 0 && window.performance.getEntriesByType("navigation")[0].type === "back_forward");
 
-            if (isBackNavigation) {
-                // لو ضغط باك، إخفي الأيقونة فوراً بدون أي انتظار
-                if (splash) splash.style.display = 'none';
+            if (isBackBtn) {
+                // لو ضغط رجوع: اخفي الشاشة الافتتاحية في جزء من الثانية بدون أنيميشن
+                splash.style.display = 'none';
             } else {
-                // لو بيفتح البرنامج لأول مرة أو عمل ريفريش، شغلها 3 ثواني
+                // لو بيفتح البرنامج جديد أو عمل ريفريش: شغل الأيقونة 3 ثواني
+                splash.style.display = 'flex';
                 setTimeout(() => {
-                    if(splash) {
-                        splash.style.opacity = '0';
-                        setTimeout(() => splash.style.display = 'none', 500);
-                    }
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.style.display = 'none', 500);
                 }, 3000);
             }
         });
-
+    </script>
         // دوال الإعدادات
         function openSettings() {
             document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
