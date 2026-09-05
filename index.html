@@ -230,26 +230,23 @@
         </div>
     </div>
 
-    <!-- استدعاء ملفات السكربت -->
+<!-- استدعاء ملفات السكربت -->
     <script src="db.js"></script>
     <script src="ai_brain.js?v=600"></script>
     
-<script>
-        // كود الشاشة الافتتاحية الذكي (يفرق بين الريفريش وزر الرجوع)
+    <script>
+        // 1. كود الشاشة الافتتاحية الذكي (يفرق بين الريفريش وزر الرجوع)
         window.addEventListener('pageshow', (event) => {
             let splash = document.getElementById('splash-screen');
             if (!splash) return;
 
-            // التحقق القاطع: هل العميل ضغط على زر "الرجوع"؟
             let isBackBtn = event.persisted || 
                             (window.performance && window.performance.navigation && window.performance.navigation.type === 2) ||
                             (window.performance && window.performance.getEntriesByType("navigation").length > 0 && window.performance.getEntriesByType("navigation")[0].type === "back_forward");
 
             if (isBackBtn) {
-                // لو ضغط رجوع: اخفي الشاشة الافتتاحية في جزء من الثانية بدون أنيميشن
                 splash.style.display = 'none';
             } else {
-                // لو بيفتح البرنامج جديد أو عمل ريفريش: شغل الأيقونة 3 ثواني
                 splash.style.display = 'flex';
                 setTimeout(() => {
                     splash.style.opacity = '0';
@@ -258,7 +255,7 @@
             }
         });
 
-        // دوال الإعدادات
+        // 2. دوال الإعدادات (الترس ⚙️)
         function openSettings() {
             document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
             document.getElementById('set-ai-key').value = localStorage.getItem('seraj_ai_key') || '';
@@ -291,7 +288,7 @@
             closeSettings();
         }
 
-        // الحارس اللحظي وتسجيل الدخول
+        // 3. الحارس اللحظي وتسجيل الدخول
         document.addEventListener("DOMContentLoaded", () => {
             let savedStoreId = localStorage.getItem('seraj_store_id');
             if(savedStoreId) {
@@ -353,14 +350,10 @@
             }
         }
         
-        // تفعيل الألوان وتطبيق الموبايل
+        // 4. تفعيل الألوان
         window.onload = () => {
             if(typeof DB !== 'undefined') DB.applySavedTheme();
         };
-
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch((err) => console.log(err));
-        }
     </script>
 </body>
 </html>
