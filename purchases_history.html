@@ -679,7 +679,6 @@ function renderEditTable() {
             const tr = document.createElement('tr');
             tr.className = 'swipe-row';
             
-            // متغيرات تتبع السحب
             let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
             let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
 
@@ -689,21 +688,36 @@ function renderEditTable() {
                 startTime = Date.now();
                 tr.style.transition = 'none';
                 
-renderEditTable()
+                pressTimer = setTimeout(() => {
+                    if (isScrolling || isSwiping) return; 
+                    isLongPress = true; isDown = false; 
+                    
+                    document.getElementById('editItemName').innerText = item.name;
+                    document.getElementById('editItemPrice').value = item.purchasePrice;
+                    document.getElementById('editItemSellPrice').value = item.price || item.sellPrice || item.purchasePrice;
+                    document.getElementById('editItemQty').value = item.qty;
+                    document.getElementById('editItemIndex').value = index;
+                    
+                    let p = productsDB.find(x => x.id === item.id);
+                    document.getElementById('editStockInfo').innerText = (p ? (p.lots ? p.lots.reduce((s,l)=>s+l.stock,0) : p.stock) : 0);
+                    document.getElementById('editSupplier').innerText = (p ? (p.lots && p.lots.length>0 ? p.lots[0].supplier : p.supplier) : "---");
+                    document.getElementById('hiddenDetailsBox').style.display = 'none';
+                    
+                    document.getElementById('editItemModal').style.display = 'flex';
+                }, 1000);
+            };
 
             const moveAction = (x, y) => {
                 if (!isDown) return;
                 let diffX = x - startX;
                 let diffY = y - startY;
                 
-                // اكتشاف السكرول لفوق وتحت
                 if (Math.abs(diffY) > 8) { 
                     isScrolling = true; 
                     clearTimeout(pressTimer); 
                     return; 
                 }
 
-                // اكتشاف السحب يمين وشمال للحذف
                 if (Math.abs(diffX) > 15 && !isScrolling) { 
                     isSwiping = true; 
                     clearTimeout(pressTimer); 
@@ -719,7 +733,7 @@ renderEditTable()
                 let finalDiffX = Math.abs(x - startX);
                 let finalDiffY = Math.abs(y - startY);
 
-                if (isScrolling) return; // السكرول مبيعملش حاجة
+                if (isScrolling) return; 
 
                 if (isSwiping) {
                     let diffX = x - startX;
@@ -728,7 +742,6 @@ renderEditTable()
                         setTimeout(() => { editingInvoiceData.items.splice(index, 1); renderEditTable(); }, 200);
                     } else { tr.style.transform = 'translateX(0)'; }
                 } else if (!isLongPress) {
-                    // زيادة الكمية بالتكة السريعة فقط
                     if (touchDuration < 300 && finalDiffX < 10 && finalDiffY < 10) {
                         editingInvoiceData.items[index].qty += 1; renderEditTable();
                     }
