@@ -901,7 +901,7 @@ function cancelInvoiceFromMenu() {
         }
     }
 
-    function renderEditTable() {
+function renderEditTable() {
         const tbody = document.getElementById('editInvoiceItemsTable');
         tbody.innerHTML = '';
         let currentSubTotal = 0;
@@ -914,12 +914,18 @@ function cancelInvoiceFromMenu() {
             const tr = document.createElement('tr');
             tr.className = 'swipe-row';
             
-                     let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; let isLongPress = false; let pressTimer; let isScrolling = false; 
+            let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
+            let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
 
- const startAction = (x, y) => {
-                startX = x; startY = y; isDown = true; isSwiping = false; isLongPress = false; isScrolling = false; tr.style.transition = 'none';
+            const startAction = (x, y) => {
+                startX = x; startY = y; 
+                isDown = true; isSwiping = false; isLongPress = false; isScrolling = false;
+                startTime = Date.now();
+                tr.style.transition = 'none';
+                
+                // مدة الضغطة الطويلة بقت ثانية كاملة (1000 مللي ثانية)
                 pressTimer = setTimeout(() => {
-                    if (isScrolling) return; // لو بيعمل سكرول متفتحش التعديل
+                    if (isScrolling || isSwiping) return; // لو بيعمل سكرول، متفتحش التعديل
                     isLongPress = true; isDown = false; 
                     
                     document.getElementById('editItemName').innerText = item.name;
@@ -934,7 +940,7 @@ function cancelInvoiceFromMenu() {
                     document.getElementById('hiddenDetailsBox').style.display = 'none';
                     
                     document.getElementById('editItemModal').style.display = 'flex';
-                }, 600);
+                }, 1000);
             };
 
             const moveAction = (x, y) => {
@@ -942,14 +948,14 @@ function cancelInvoiceFromMenu() {
                 let diffX = x - startX;
                 let diffY = y - startY;
                 
-                // لو اتحرك لفوق أو تحت أكتر من 10 بيكسل، ده سكرول!
-                if (Math.abs(diffY) > 10) { 
+                // لو صباعه اتحرك لفوق أو تحت (حتى لو 8 بيكسل بس)، ده سكرول أكيد!
+                if (Math.abs(diffY) > 8) { 
                     isScrolling = true; 
                     clearTimeout(pressTimer); // الغي الضغطة الطويلة فوراً
                     return; 
                 }
 
-                // لو اتحرك يمين وشمال، ده سحب (Swipe) للحذف
+                // سحب يمين وشمال للحذف
                 if (Math.abs(diffX) > 15 && !isScrolling) { 
                     isSwiping = true; 
                     clearTimeout(pressTimer); 
@@ -957,11 +963,15 @@ function cancelInvoiceFromMenu() {
                 }
             };
 
-            const endAction = (x) => {
+            const endAction = (x, y) => {
                 if (!isDown && !isSwiping) return; 
                 isDown = false; clearTimeout(pressTimer); tr.style.transition = 'transform 0.2s ease-out';
                 
-                if (isScrolling) return; // لو كان سكرول، متزودش العدد ولا تعمل حاجة
+                let touchDuration = Date.now() - startTime;
+                let finalDiffX = Math.abs(x - startX);
+                let finalDiffY = Math.abs(y - startY);
+
+                if (isScrolling) return; // لو سكرول، متعملش أي حاجة نهائياً
 
                 if (isSwiping) {
                     let diffX = x - startX;
@@ -970,18 +980,23 @@ function cancelInvoiceFromMenu() {
                         setTimeout(() => { editingInvoiceData.items.splice(index, 1); renderEditTable(); }, 200);
                     } else { tr.style.transform = 'translateX(0)'; }
                 } else if (!isLongPress) {
-                    editingInvoiceData.items[index].qty += 1; renderEditTable();
+                    // شرط قاسي لزيادة العدد: لازم تكّة سريعة (أقل من 300 مللي ثانية) وصباعك ماتحركش نهائي!
+                    if (touchDuration < 300 && finalDiffX < 10 && finalDiffY < 10) {
+                        editingInvoiceData.items[index].qty += 1; renderEditTable();
+                    }
                 }
                 isSwiping = false; isScrolling = false;
             };
 
+            // ربط الدوال بحركة التاتش والماوس بدقة
             tr.ontouchstart = (e) => { startAction(e.touches[0].clientX, e.touches[0].clientY); };
             tr.ontouchmove = (e) => { moveAction(e.touches[0].clientX, e.touches[0].clientY); };
-            tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX); };
+            tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); };
             tr.onmousedown = (e) => { startAction(e.clientX, e.clientY); };
             tr.onmousemove = (e) => { moveAction(e.clientX, e.clientY); };
-            tr.onmouseup = (e) => { endAction(e.clientX); };
-            tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX); };
+            tr.onmouseup = (e) => { endAction(e.clientX, e.clientY); };
+            tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX, e.clientY); };
+
             tr.innerHTML = `
                 <td style="text-align: right; font-weight:bold; color: #ffffff;">${item.name}</td>
                 <td style="color: #ffffff; font-weight:bold;">${itemPrice.toFixed(2)}</td>
