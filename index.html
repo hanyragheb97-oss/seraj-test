@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سراجLED - الواجهة الرئيسية</title>
     
-    <!-- إضافات تطبيق الموبايل (PWA) -->
+    <!-- إضافات تطبيق الموبايل والأيقونات (الجديدة) -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#070913">
+    <link rel="icon" href="icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="icon.png">
     
     <!-- استدعاء ملفات السحابة (Firebase) -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -23,19 +25,15 @@
             --text-white: #ffffff;        
         }
 
-        /* تعديل الشاشة لمنع السكرول وجعلها تطبيق أصلي */
-body { 
+        body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
             margin: 0; 
             padding: 0; 
             user-select: none; 
-            
-            /* استخدمنا dvh عشان يتأقلم مع شريط الموبايل الديناميكي */
             height: 100dvh; 
             width: 100vw; 
-            /* سمحنا بالسكرول البسيط بدل القص لو الشاشة صغيرة جداً */
             overflow-y: auto; 
             overflow-x: hidden; 
             overscroll-behavior: none; 
@@ -72,28 +70,24 @@ body {
         .led-e { color: #00ff66; text-shadow: 0 0 10px #00ff66, 0 0 25px #00ff66, 0 0 50px rgba(0, 255, 102, 0.8), 0 0 80px rgba(0, 255, 102, 0.5); }
         .led-d { color: #00bfff; text-shadow: 0 0 10px #00bfff, 0 0 25px #00bfff, 0 0 50px rgba(0, 191, 255, 0.8), 0 0 80px rgba(0, 191, 255, 0.5); }
 
-  .container { 
+        .container { 
             padding: 15px; 
             max-width: 800px; 
             margin: auto; 
-            /* توافق مع الـ dvh وإعطاء حد أدنى للطول عشان الأيقونات متتفعصش */
             height: calc(100dvh - 75px); 
             min-height: 550px; 
             box-sizing: border-box;
-            /* إضافة مساحة تحتية عشان رسالة السحابة متغطيهاش */
             padding-bottom: 30px; 
         }
         
-  .grid { 
+        .grid { 
             display: grid; 
             grid-template-columns: 1fr 1fr; 
-            /* قللنا ارتفاع المخزن لـ 0.9 وكبرنا باقي الأيقونات لـ 1.1 عشان نوزن الشاشة */
             grid-template-rows: 0.9fr 1.1fr 1.1fr 1.1fr; 
             gap: 15px; 
-            height: 100%; /* ملء الحاوية بالكامل */
+            height: 100%; 
         }
         
-        /* تنسيق المربعات ذات نفسها */
         .grid-item { 
             background: var(--card-bg); 
             border-radius: 18px; 
@@ -122,7 +116,6 @@ body {
             height: 100%; 
         }
 
-        /* تنسيق الصور عشان تملا المربع بالكامل */
         .grid-item img {
             width: 100%;
             height: 100%;
@@ -134,7 +127,6 @@ body {
             border: none; 
         }
 
-        /* تنسيق النصوص (لون أبيض مع ظل أسود قوي لكل الأيقونات) */
         .title { 
             position: absolute; 
             bottom: 0; 
@@ -145,12 +137,8 @@ body {
             font-size: 19px; 
             padding: 15px 0 10px 0; 
             z-index: 2; 
-            
-            /* اللون الأبيض والظل الأسود */
             color: #ffffff; 
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 1), -2px -2px 4px rgba(0, 0, 0, 1), 0 0 15px rgba(0, 0, 0, 0.9);
-            
-            /* التدرج الأسود خلف الكلمة */
             background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, rgba(0, 0, 0, 0.4) 60%, transparent 100%);
         }
         
@@ -161,7 +149,13 @@ body {
     </style>
 </head>
 <body>
-<!-- ⚙️ زر الترس العائم (يظهر في زاوية الشاشة) -->
+
+    <!-- 🌌 الشاشة الافتتاحية (تظهر أول ما تفتح وتختفي) -->
+    <div id="splash-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#000; z-index:9999999; display:flex; justify-content:center; align-items:center; transition: opacity 0.5s ease;">
+        <img src="icon.png" alt="سراج كاشير" style="width:100%; height:100%; object-fit:cover;">
+    </div>
+
+    <!-- ⚙️ زر الترس العائم -->
     <button onclick="openSettings()" style="position:fixed; top:20px; left:20px; background:#f59e0b; border:none; border-radius:50%; width:50px; height:50px; font-size:24px; cursor:pointer; z-index:9999; box-shadow:0 0 15px rgba(245,158,11,0.5); transition: transform 0.2s;">⚙️</button>
 
     <!-- 🛠️ نافذة الإعدادات المنبثقة (Modal) -->
@@ -171,20 +165,89 @@ body {
             <h2 style="color:#f59e0b; margin-top:0; margin-bottom:20px;">إعدادات المتجر ⚙️</h2>
 
             <input type="text" id="set-store-name" placeholder="اسم المحل (يظهر على الفواتير)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:16px;">
-
-            <input type="password" id="set-new-pass" placeholder="كلمة المرور الجديدة (اتركها فارغة لو مش هتغيرها)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:14px;">
-
+            <input type="password" id="set-new-pass" placeholder="كلمة المرور الجديدة (اختياري)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:14px;">
             <input type="password" id="set-ai-key" placeholder="مفتاح الذكاء الاصطناعي (API Key)" style="width:100%; padding:12px; margin-bottom:25px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:14px;">
 
             <button onclick="saveSettings()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; font-size:18px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px;">حفظ الإعدادات 💾</button>
             <button onclick="closeSettings()" style="width:100%; padding:15px; background:#444; color:#fff; font-size:16px; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">إلغاء ❌</button>
-        
         </div>
     </div>
 
+    <div class="header">
+        <div class="brand-container">
+            <span class="brand-siraj">سراج</span>
+            <span>
+                <span class="led-l">L</span><span class="led-e">E</span><span class="led-d">D</span>
+            </span>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <a href="store.html" class="grid-item full-width">
+                <img src="store.jpg" alt="مخزن المنتجات">
+                <div class="title">مخزن المنتجات</div>
+            </a>
+            <a href="purchases.html" class="grid-item">
+                <img src="buy.jpg" alt="شراء">
+                <div class="title">شراء</div>
+            </a>
+            <a href="sales.html" class="grid-item">
+                <img src="sales.jpg" alt="بيع">
+                <div class="title">بيع</div>
+            </a>
+            <a href="suppliers.html" class="grid-item">
+                <img src="suppliers.jpg" alt="الموردين">
+                <div class="title">الموردين</div>
+            </a>
+            <a href="customers.html" class="grid-item">
+                <img src="customers.jpg" alt="العملاء">
+                <div class="title">العملاء</div>
+            </a>
+            <a href="treasury.html" class="grid-item">
+                <img src="safe.jpg" alt="الخزنة">
+                <div class="title">الخزنة</div>
+            </a>
+            <a href="smart_accountant.html" class="grid-item">
+                <img src="ai.jpg" alt="المحاسب الذكي">
+                <div class="title">المحاسب الذكي</div>
+            </a>
+        </div>
+    </div>
+
+    <!-- 🔐 شاشة تسجيل الدخول المركزية -->
+    <div id="seraj-login-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-dark-1, #121212); z-index:999999; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family: 'Tajawal', sans-serif;">
+        <div style="background:var(--card-bg, #1e1e1e); padding:40px; border-radius:15px; border:1px solid var(--neon-border, #00ff66); box-shadow:0 0 20px var(--neon-glow, rgba(0,255,102,0.2)); text-align:center; width:90%; max-width:400px;">
+            <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
+            <h2 style="color:var(--text-main, #fff); margin-bottom:5px;">سراج كاشير</h2>
+            <p style="color:#aaa; font-size:14px; margin-bottom:25px;">برجاء تسجيل الدخول للوصول لبيانات متجرك</p>
+            
+            <input type="text" id="store-id-input" placeholder="كود المحل (ID)" style="width:100%; padding:15px; margin-bottom:15px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
+            <input type="password" id="store-pass-input" placeholder="كلمة المرور" style="width:100%; padding:15px; margin-bottom:25px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
+            
+            <button onclick="loginToStore()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; transition: transform 0.2s;">تسجيل الدخول 🚀</button>
+            <p id="login-error" style="color:#ff4444; margin-top:15px; display:none; font-weight:bold;">بيانات الدخول غير صحيحة!</p>
+        </div>
+    </div>
+
+    <!-- استدعاء ملفات السكربت -->
+    <script src="db.js"></script>
+    <script src="ai_brain.js?v=600"></script>
+    
     <script>
+        // إخفاء الشاشة الافتتاحية بعد 3 ثواني
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                let splash = document.getElementById('splash-screen');
+                if(splash) {
+                    splash.style.opacity = '0';
+                    setTimeout(() => splash.style.display = 'none', 500);
+                }
+            }, 3000);
+        });
+
+        // دوال الإعدادات
         function openSettings() {
-            // سحب البيانات المحفوظة وعرضها للعميل
             document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
             document.getElementById('set-ai-key').value = localStorage.getItem('seraj_ai_key') || '';
             document.getElementById('set-new-pass').value = ''; 
@@ -201,194 +264,91 @@ body {
             let newPass = document.getElementById('set-new-pass').value.trim();
             let storeId = localStorage.getItem('seraj_store_id');
 
-            // 1. حفظ الاسم ومفتاح الذكاء محلياً (لا يذهبان للفايربيز)
             if (sName !== "") localStorage.setItem('seraj_store_name', sName);
             if (aiKey !== "") localStorage.setItem('seraj_ai_key', aiKey);
 
-            // 2. تغيير كلمة المرور في الفايربيز (إذا قام العميل بكتابة كلمة جديدة)
             if (newPass !== "") {
                 if (window.dbCloud && storeId) {
                     window.dbCloud.ref('Admin_Users/' + storeId).update({ password: newPass });
-                    localStorage.setItem('seraj_store_pass', newPass); // تحديث الجيب الداخلي للمتصفح
+                    localStorage.setItem('seraj_store_pass', newPass); 
                     alert("تم تغيير كلمة المرور وحفظ الإعدادات بنجاح! 🔒");
                 }
             } else {
                 alert("تم حفظ الإعدادات بنجاح! ✅");
             }
-            
             closeSettings();
         }
-    </script>
-    <div class="header">
-        <div class="brand-container">
-            <span class="brand-siraj">سراج</span>
-            <span>
-                <span class="led-l">L</span><span class="led-e">E</span><span class="led-d">D</span>
-            </span>
-        </div>
-    </div>
 
-    <div class="container">
-        <div class="grid">
-            <!-- المخزن (عريض) -->
-            <a href="store.html" class="grid-item full-width">
-                <img src="store.jpg" alt="مخزن المنتجات">
-                <div class="title">مخزن المنتجات</div>
-            </a>
-            
-            <!-- الشراء -->
-            <a href="purchases.html" class="grid-item">
-                <img src="buy.jpg" alt="شراء">
-                <div class="title">شراء</div>
-            </a>
-            
-            <!-- البيع -->
-            <a href="sales.html" class="grid-item">
-                <img src="sales.jpg" alt="بيع">
-                <div class="title">بيع</div>
-            </a>
-            
-            <!-- الموردين -->
-            <a href="suppliers.html" class="grid-item">
-                <img src="suppliers.jpg" alt="الموردين">
-                <div class="title">الموردين</div>
-            </a>
-            
-            <!-- العملاء -->
-            <a href="customers.html" class="grid-item">
-                <img src="customers.jpg" alt="العملاء">
-                <div class="title">العملاء</div>
-            </a>
-            
-            <!-- الخزنة -->
-            <a href="treasury.html" class="grid-item">
-                <img src="safe.jpg" alt="الخزنة">
-                <div class="title">الخزنة</div>
-            </a>
-            
-            <!-- المحاسب الذكي -->
-            <!-- لاحظ تم مسح كلاس smart-title عشان ياخد نفس اللون الأبيض -->
-            <a href="smart_accountant.html" class="grid-item">
-                <img src="ai.jpg" alt="المحاسب الذكي">
-                <div class="title">المحاسب الذكي</div>
-            </a>
-        </div>
-    </div>
-
-    <!-- استدعاء ملف قاعدة البيانات -->
-    <script src="db.js"></script>
-    
-    <script>
-        // تفعيل الألوان الذكية
-        window.onload = () => {
-            if(typeof DB !== 'undefined') {
-                DB.applySavedTheme();
+        // الحارس اللحظي وتسجيل الدخول
+        document.addEventListener("DOMContentLoaded", () => {
+            let savedStoreId = localStorage.getItem('seraj_store_id');
+            if(savedStoreId) {
+                document.getElementById('seraj-login-screen').style.display = 'none';
+                
+                setTimeout(() => {
+                    if (window.dbCloud) {
+                        window.dbCloud.ref('Admin_Users/' + savedStoreId + '/status').on('value', (snapshot) => {
+                            if (snapshot.val() === 'suspended') {
+                                localStorage.removeItem('seraj_store_id');
+                                localStorage.removeItem('seraj_store_pass');
+                                alert("⚠️ تم إيقاف اشتراكك! برجاء التواصل مع الإدارة.");
+                                window.location.reload(); 
+                            }
+                        });
+                    }
+                }, 1000); 
             }
+        });
+
+        function loginToStore() {
+            let id = document.getElementById('store-id-input').value.trim();
+            let pass = document.getElementById('store-pass-input').value.trim();
+            let errorMsg = document.getElementById('login-error');
+            
+            if(id === "" || pass === "") {
+                errorMsg.innerText = "برجاء إدخال الكود وكلمة المرور!";
+                errorMsg.style.display = "block";
+                return;
+            }
+
+            errorMsg.innerText = "جاري التحقق... ⏳";
+            errorMsg.style.display = "block";
+            errorMsg.style.color = "#f59e0b";
+
+            if (window.dbCloud) {
+                window.dbCloud.ref('Admin_Users/' + id).once('value').then((snapshot) => {
+                    if (snapshot.exists()) {
+                        let userData = snapshot.val();
+                        if (userData.status === 'suspended') {
+                            errorMsg.innerText = "هذا الحساب موقوف! 🚫";
+                            errorMsg.style.color = "#ff4444";
+                            return;
+                        }
+                        if (pass === userData.password) {
+                            localStorage.setItem('seraj_store_id', id);
+                            localStorage.setItem('seraj_store_pass', pass);
+                            document.getElementById('seraj-login-screen').style.display = 'none';
+                            window.location.reload();
+                        } else {
+                            errorMsg.innerText = "كلمة المرور غير صحيحة ❌";
+                            errorMsg.style.color = "#ff4444";
+                        }
+                    } else {
+                        errorMsg.innerText = "كود المحل غير مسجل لدينا ❌";
+                        errorMsg.style.color = "#ff4444";
+                    }
+                });
+            }
+        }
+        
+        // تفعيل الألوان وتطبيق الموبايل
+        window.onload = () => {
+            if(typeof DB !== 'undefined') DB.applySavedTheme();
         };
 
-        // تفعيل تطبيق الموبايل والعمل بدون إنترنت
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-            .then(() => console.log('جاهز للعمل بدون إنترنت'))
-            .catch((err) => console.log('خطأ في تثبيت التطبيق:', err));
+            navigator.serviceWorker.register('sw.js').catch((err) => console.log(err));
         }
     </script>
-   <script src="ai_brain.js?v=600"></script>
 </body>
- <!-- 🔐 شاشة تسجيل الدخول المركزية -->
-    <div id="seraj-login-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background:var(--bg-dark-1, #121212); z-index:999999; display:flex; justify-content:center; align-items:center; flex-direction:column; font-family: 'Tajawal', sans-serif;">
-        <div style="background:var(--card-bg, #1e1e1e); padding:40px; border-radius:15px; border:1px solid var(--neon-border, #00ff66); box-shadow:0 0 20px var(--neon-glow, rgba(0,255,102,0.2)); text-align:center; width:90%; max-width:400px;">
-            
-            <!-- لوجو أو اسم البرنامج -->
-            <div style="font-size: 50px; margin-bottom: 10px;">🛡️</div>
-            <h2 style="color:var(--text-main, #fff); margin-bottom:5px;">سراج كاشير</h2>
-            <p style="color:#aaa; font-size:14px; margin-bottom:25px;">برجاء تسجيل الدخول للوصول لبيانات متجرك</p>
-            
-            <!-- حقول الإدخال -->
-            <input type="text" id="store-id-input" placeholder="كود المحل (ID)" style="width:100%; padding:15px; margin-bottom:15px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
-            <input type="password" id="store-pass-input" placeholder="كلمة المرور" style="width:100%; padding:15px; margin-bottom:25px; border-radius:8px; border:1px solid #444; background:#222; color:#fff; font-size:16px; text-align:center; box-sizing: border-box;">
-            
-            <!-- زر الدخول -->
-            <button onclick="loginToStore()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; border:none; border-radius:8px; font-size:18px; font-weight:bold; cursor:pointer; transition: transform 0.2s;">تسجيل الدخول 🚀</button>
-            
-            <!-- رسالة الخطأ -->
-            <p id="login-error" style="color:#ff4444; margin-top:15px; display:none; font-weight:bold;">بيانات الدخول غير صحيحة!</p>
-        </div>
-    </div>
-
-<script>
-    // 🚨 إنشاء حساب تجريبي تلقائياً أول ما الصفحة تفتح عشان نخلص من المشكلة دي نهائياً
-    setTimeout(() => {
-        if (window.dbCloud) {
-            window.dbCloud.ref('Admin_Users/100').set({
-                password: "1234",
-                status: "active"
-            });
-        }
-    }, 2000);
-
-document.addEventListener("DOMContentLoaded", () => {
-        let savedStoreId = localStorage.getItem('seraj_store_id');
-        if(savedStoreId) {
-            document.getElementById('seraj-login-screen').style.display = 'none';
-            
-            // 🚨 الحارس اللحظي: يراقب حالة الحساب باستمرار من الفايربيز
-            setTimeout(() => {
-                if (window.dbCloud) {
-                    window.dbCloud.ref('Admin_Users/' + savedStoreId + '/status').on('value', (snapshot) => {
-                        if (snapshot.val() === 'suspended') {
-                            // مسح بيانات الدخول وطرد العميل فوراً
-                            localStorage.removeItem('seraj_store_id');
-                            localStorage.removeItem('seraj_store_pass');
-                            alert("⚠️ تم إيقاف اشتراكك! برجاء التواصل مع الإدارة.");
-                            window.location.reload(); 
-                        }
-                    });
-                }
-            }, 1000); // تأخير ثانية لضمان تحميل الاتصال
-        }
-    });
-
-    function loginToStore() {
-        let id = document.getElementById('store-id-input').value.trim();
-        let pass = document.getElementById('store-pass-input').value.trim();
-        let errorMsg = document.getElementById('login-error');
-        
-        if(id === "" || pass === "") {
-            errorMsg.innerText = "برجاء إدخال الكود وكلمة المرور!";
-            errorMsg.style.display = "block";
-            return;
-        }
-
-        errorMsg.innerText = "جاري التحقق... ⏳";
-        errorMsg.style.display = "block";
-        errorMsg.style.color = "#f59e0b";
-
-        if (window.dbCloud) {
-            window.dbCloud.ref('Admin_Users/' + id).once('value').then((snapshot) => {
-                if (snapshot.exists()) {
-                    let userData = snapshot.val();
-                    if (userData.status === 'suspended') {
-                        errorMsg.innerText = "هذا الحساب موقوف! 🚫";
-                        errorMsg.style.color = "#ff4444";
-                        return;
-                    }
-                    if (pass === userData.password) {
-                        localStorage.setItem('seraj_store_id', id);
-                        localStorage.setItem('seraj_store_pass', pass);
-                        document.getElementById('seraj-login-screen').style.display = 'none';
-                        window.location.reload();
-                    } else {
-                        errorMsg.innerText = "كلمة المرور غير صحيحة ❌";
-                        errorMsg.style.color = "#ff4444";
-                    }
-                } else {
-                    errorMsg.innerText = "كود المحل غير مسجل لدينا ❌";
-                    errorMsg.style.color = "#ff4444";
-                }
-            });
-        }
-    }
-</script>
-</script> 
 </html>
