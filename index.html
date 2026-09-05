@@ -235,15 +235,31 @@
     <script src="ai_brain.js?v=600"></script>
     
     <script>
-        // إخفاء الشاشة الافتتاحية بعد 3 ثواني
+// إخفاء الشاشة الافتتاحية بذكاء (لا تظهر عند الرجوع)
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                let splash = document.getElementById('splash-screen');
-                if(splash) {
-                    splash.style.opacity = '0';
-                    setTimeout(() => splash.style.display = 'none', 500);
+            let splash = document.getElementById('splash-screen');
+            let isBackNavigation = false;
+
+            // التحقق هل العميل فتح الصفحة بـ (رجوع) أم تحميل جديد/ريفريش
+            if (window.performance && window.performance.getEntriesByType) {
+                let navEntries = window.performance.getEntriesByType("navigation");
+                if (navEntries.length > 0 && navEntries[0].type === "back_forward") {
+                    isBackNavigation = true;
                 }
-            }, 3000);
+            }
+
+            if (isBackNavigation) {
+                // لو ضغط باك، إخفي الأيقونة فوراً بدون أي انتظار
+                if (splash) splash.style.display = 'none';
+            } else {
+                // لو بيفتح البرنامج لأول مرة أو عمل ريفريش، شغلها 3 ثواني
+                setTimeout(() => {
+                    if(splash) {
+                        splash.style.opacity = '0';
+                        setTimeout(() => splash.style.display = 'none', 500);
+                    }
+                }, 3000);
+            }
         });
 
         // دوال الإعدادات
