@@ -6,6 +6,8 @@
     <title>سجل المشتريات - سراج LED</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+     .batches-slider { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scroll-snap-type: x mandatory;}
+        .batch-card { min-width: 140px; background: rgba(25, 22, 56, 0.9); border: 1px solid var(--neon-border); border-radius: 10px; padding: 10px; font-size: 13px; text-align: right; line-height: 1.6; flex-shrink: 0; color: var(--text-white); font-weight: bold;}   
         :root {
             /* لون مميز للمشتريات (أزرق سماوي/سيان) */
             --neon-border: #0ea5e9;
@@ -264,27 +266,6 @@
     </div>
 
 <div class="modal-overlay" id="editItemModal">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <div class="modal-header"><h3 id="editItemName">تعديل الصنف</h3></div>
-            
-            <!-- الزرار والمربع المخفي (جديد) -->
-            <button class="details-toggle-btn" onclick="toggleDetails()">+ عرض تفاصيل المخزن والمورد</button>
-            <div class="hidden-details" id="hiddenDetailsBox">
-                <p>الرصيد بالمخزن: <strong id="editStockInfo">0</strong></p>
-                <p>المورد السابق: <strong id="editSupplier">---</strong></p>
-            </div>
-            
-            <!-- باقي الحقول زي ما هي -->
-            <div class="compact-row"><label>سعر الشراء:</label><input type="number" id="editItemPrice" onclick="this.select()"></div>
-            <div class="compact-row"><label>سعر البيع للجمهور:</label><input type="number" id="editItemSellPrice" onclick="this.select()"></div>
-            <div class="compact-row"><label>الكمية المشتراة:</label><input type="number" id="editItemQty" onclick="this.select()"></div>
-            <input type="hidden" id="editItemIndex">
-            <div class="btn-group">
-                <button class="cancel-btn" onclick="document.getElementById('editItemModal').style.display='none'">إلغاء</button>
-                <button class="confirm-btn" onclick="saveEditItem()">تحديث</button>
-            </div>
-        </div>
-    </div>
 
     <div class="modal-overlay" id="saveEditModalOverlay">
         <div class="modal-content" onclick="event.stopPropagation()">
@@ -688,7 +669,7 @@ function renderEditTable() {
                 startTime = Date.now();
                 tr.style.transition = 'none';
                 
-                pressTimer = setTimeout(() => {
+pressTimer = setTimeout(() => {
                     if (isScrolling || isSwiping) return; 
                     isLongPress = true; isDown = false; 
                     
@@ -697,11 +678,39 @@ function renderEditTable() {
                     document.getElementById('editItemSellPrice').value = item.price || item.sellPrice || item.purchasePrice;
                     document.getElementById('editItemQty').value = item.qty;
                     document.getElementById('editItemIndex').value = index;
-                    
+
+                    // --- الجديد: جلب تفاصيل التشغيل والكروت من المخزن ---
                     let p = productsDB.find(x => x.id === item.id);
-                    document.getElementById('editStockInfo').innerText = (p ? (p.lots ? p.lots.reduce((s,l)=>s+l.stock,0) : p.stock) : 0);
-                    document.getElementById('editSupplier').innerText = (p ? (p.lots && p.lots.length>0 ? p.lots[0].supplier : p.supplier) : "---");
+                    let slider = document.getElementById('editBatchesSlider');
+                    slider.innerHTML = ''; 
+                    let totalStock = 0;
+
+                    if (p && p.lots && p.lots.length > 0) {
+                        p.lots.forEach(b => {
+                            let bStock = parseFloat(b.stock) || 0;
+                            totalStock += bStock;
+                            slider.innerHTML += `
+                                <div class="batch-card">
+                                    <div style="color:var(--neon-border); font-weight:bold;">مورد: ${b.supplier || 'نقدي'}</div>
+                                    <div>شراء: <span style="color:#ff1a40;">${b.purchasePrice}</span> ج</div>
+                                    <div>بيع: <span style="color:#00ff66;">${b.price}</span> ج</div>
+                                    <div>كمية: <span style="color:#00ff66; font-weight:bold;">${bStock}</span></div>
+                                </div>
+                            `;
+                        });
+                    } else if (p) { 
+                        totalStock = parseFloat(p.stock) || 0;
+                        slider.innerHTML = `
+                            <div class="batch-card" style="min-width:100%;">
+                                <div>شراء سابق: <span style="color:#ff1a40;">${p.purchasePrice || 0}</span> ج</div>
+                                <div>الكمية الحالية: <span style="color:#00ff66; font-weight:bold;">${totalStock}</span></div>
+                            </div>
+                        `;
+                    }
+                    
+                    document.getElementById('editTotalStock').innerText = totalStock;
                     document.getElementById('hiddenDetailsBox').style.display = 'none';
+                    // ----------------------------------------------------
                     
                     document.getElementById('editItemModal').style.display = 'flex';
                 }, 1000);
