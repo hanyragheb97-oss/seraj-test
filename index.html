@@ -209,6 +209,11 @@
         <button onclick="alert('جاري البرمجة...'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">💰 إعدادات الخزينة</button>
         
         <button onclick="backupData(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">💾 حفظ نسخة من البيانات</button>
+        <!-- الزرار الجديد: استرجاع البيانات -->
+        <button onclick="document.getElementById('restore-file-input').click(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">📂 استرجاع بيانات من نسخة</button>
+        
+        <!-- حقل مخفي لرفع الملف (المتصفح بيحتاجه عشان يفتح مدير الملفات في التليفون) -->
+        <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="restoreData(event)">
         
         <button onclick="alert('جاري البرمجة...'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">🚀 تفعيل التطبيق</button>
         
@@ -357,6 +362,32 @@
                 dataObj[key] = localStorage.getItem(key);
             }
             
+           // دالة استرجاع البيانات من الملف
+        function restoreData(event) {
+            let file = event.target.files[0]; // سحب الملف اللي العميل اختاره
+            if (!file) return;
+
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    // قراءة الملف وتحويله لبيانات يفهمها البرنامج
+                    let dataObj = JSON.parse(e.target.result);
+                    
+                    // زرع البيانات في ذاكرة التليفون الجديد
+                    for (let key in dataObj) {
+                        localStorage.setItem(key, dataObj[key]);
+                    }
+                    
+                    alert("تم استرجاع البيانات بنجاح! 🎊\nسيتم إعادة تحميل البرنامج لتطبيق إعداداتك الجديدة.");
+                    window.location.reload(); // ريفريش أوتوماتيك لتشغيل الألوان والإعدادات
+                } catch (error) {
+                    alert("❌ عذراً، حدث خطأ! تأكد من أنك قمت باختيار ملف النسخة الاحتياطية الصحيح (الذي ينتهي بـ .json)");
+                }
+            };
+            
+            // قراءة الملف كنص
+            reader.readAsText(file);
+        } 
             // تحويل البيانات لملف قابل للتحميل
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
             let downloadAnchorNode = document.createElement('a');
