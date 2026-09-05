@@ -7,6 +7,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         :root {
+            /* لون مميز للمشتريات (أزرق سماوي/سيان) */
             --neon-border: #0ea5e9;
             --neon-glow: rgba(14, 165, 233, 0.4);
             --bg-dark-1: #070913;
@@ -55,6 +56,7 @@
         .context-menu div:active { background-color: rgba(14, 165, 233, 0.25); }
         .context-menu div:last-child { border-bottom: none; }
 
+        /* ================= شريط التعديل الثابت ================= */
         .edit-fixed-bottom-bar { position: fixed; bottom: 65px; left: 0; right: 0; background: rgba(19, 17, 44, 0.95); padding: 8px 10px; display: flex; gap: 8px; z-index: 90; box-shadow: 0 -4px 15px var(--neon-glow); border-top: none; }
         .edit-fixed-bottom-bar > * { flex: 1; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: bold; box-sizing: border-box; text-align: center; }
         .save-edit-btn { background: #1d4ed8; color: white; border: 1px solid #3b82f6; cursor: pointer; box-shadow: 0 0 10px rgba(59, 130, 246, 0.5); transition: 0.2s; }
@@ -63,7 +65,9 @@
         .restore-btn:active { transform: scale(0.95); }
         .details-total { background: rgba(19, 17, 44, 0.8); color: white; border: 1px solid var(--neon-border); box-shadow: 0 0 10px var(--neon-glow); flex-direction: row !important; gap: 6px; }
         .details-total span { font-size: 18px; text-shadow: 0 0 10px rgba(255, 26, 64, 0.9); }
+        .edit-screen-container { padding-bottom: 140px !important; }
 
+        /* ================= الشريط السفلي الموحد ================= */
         .unified-bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background-color: rgba(19, 17, 44, 0.95); border-top: 1px solid var(--neon-border); display: flex; padding: 10px 15px; justify-content: space-between; align-items: center; z-index: 100; box-shadow: 0 -4px 25px var(--neon-glow); }
         .header-back-btn { background: #1d4ed8; border: 2px solid #3b82f6; border-radius: 12px; padding: 0 15px; height: 45px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(59, 130, 246, 0.7); transition: all 0.2s; flex-shrink: 0; }
         .header-back-btn:active { transform: scale(0.95); filter: brightness(1.2); }
@@ -96,8 +100,8 @@
         .color-red-val { color: #ff1a40 !important; font-weight: bold; }
         .color-green-val { color: #00ff66 !important; font-weight: bold; }
         
-        /* ============== تعديل شاشة عرض الفاتورة (حرة مع الإجمالي الثابت) ============== */
-        #invoice-details-view { height: 100dvh; display: flex; flex-direction: column; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100; overflow: hidden; }
+        /* التحديث الجديد لشاشة عرض الفاتورة (Fixed Layout) */
+        #invoice-details-view { height: 100vh; overflow: hidden; flex-direction: column; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100; }
 
         @media print {
             @page { margin: 0; size: 80mm auto; }
@@ -148,40 +152,37 @@
         </div>
     </div>
 
-    <!-- الشاشة 2: العرض (تفاصيل الفاتورة - أصبحت حرة) -->
-    <div id="invoice-details-view" class="view-section" style="display: none; height: 100dvh; flex-direction: column; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100;">
-        <div class="header" style="flex-shrink: 0; justify-content: center; padding: 10px 20px;">
-            <span style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);">عرض فاتورة الشراء</span>
-        </div>
+    <!-- الشاشة 2: العرض (تفاصيل الفاتورة - التصميم الثابت الجديد) -->
+    <div id="invoice-details-view" class="view-section">
+        <div class="header"><span style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);">عرض فاتورة الشراء</span></div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box;">
-            <!-- الرأس الثابت -->
+        <div style="flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box; padding-bottom: 70px;">
+            <!-- منطقة رأس الفاتورة (ثابتة) -->
             <div id="invoiceViewHeaderArea" style="background: rgba(19, 17, 44, 0.95); padding: 12px 15px; border-bottom: 1px solid var(--neon-border); box-shadow: 0 2px 10px var(--neon-glow); flex-shrink: 0; z-index: 10;">
             </div>
             
-            <!-- الأصناف المتحركة -->
-            <div style="flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 140px; touch-action: pan-y;">
+            <!-- منطقة الأصناف (قابلة للسحب) -->
+         <div style="flex: 1; overflow-y: auto; padding: 10px; padding-bottom: 150px; touch-action: pan-y;">
                 <table style="width: 100%; margin: 0; background: transparent; box-shadow: none; border: none;">
                     <thead style="display: none;"><tr><th>الصنف</th><th>الكمية</th><th>س.شراء</th><th>الإجمالي</th></tr></thead>
                     <tbody id="invoiceViewItemsTable">
                     </tbody>
                 </table>
             </div>
-        </div>
-        
-        <!-- الإجمالي الثابت -->
-        <div id="invoiceViewTotalArea" style="position: absolute; bottom: 65px; left: 0; right: 0; background: rgba(19, 17, 44, 0.95); padding: 15px; border-top: 1px solid var(--neon-border); font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; z-index: 10;">
+            
+            <!-- الإجمالي النهائي (ثابت تحت) -->
+            <div id="invoiceViewTotalArea" style="background: rgba(19, 17, 44, 0.95); padding: 15px; border-top: 1px solid var(--neon-border); font-size: 18px; font-weight: bold; display: flex; justify-content: space-between; flex-shrink: 0; z-index: 10;">
+            </div>
         </div>
     </div>
 
-    <!-- الشاشة 3: التعديل الشامل (تم تعديل الهيكل ليصبح حر) -->
-    <div id="full-edit-view" class="view-section" style="display: none; height: 100dvh; flex-direction: column; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100;">
+    <!-- الشاشة 3: التعديل الشامل -->
+    <div id="full-edit-view" class="view-section" style="height: 100vh; overflow: hidden; flex-direction: column; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); z-index: 100;">
         <div class="header" style="flex-shrink: 0; justify-content: center; padding: 10px 20px;">
             <span style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);">تعديل فاتورة الشراء</span>
         </div>
         
-        <div style="flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; box-sizing: border-box;">
-            <!-- الجزء العلوي الثابت -->
+        <div style="flex: 1; display: flex; flex-direction: column; max-width: 800px; margin: 0 auto; width: 100%; padding-bottom: 120px; box-sizing: border-box;">
             <div style="background: rgba(19, 17, 44, 0.95); padding: 8px 10px; border-bottom: 1px solid var(--neon-border); box-shadow: 0 2px 10px var(--neon-glow); flex-shrink: 0; z-index: 10;">
                 <div id="editInvoiceHeader" style="font-size: 14px; line-height: 1.6; color: white;"></div>
                 <div class="search-container" style="margin-top: 8px; margin-bottom: 8px;">
@@ -196,8 +197,7 @@
                 </div>
             </div>
 
-            <!-- جدول الأصناف المتحرك (زودنا المساحة تحت) -->
-            <div style="flex: 1; overflow-y: auto; padding: 8px 10px; padding-bottom: 180px; touch-action: pan-y;">
+       <div style="flex: 1; overflow-y: auto; padding: 8px 10px; padding-bottom: 180px; touch-action: pan-y;">
                 <table style="width: 100%; border: none; box-shadow: none; background: transparent; margin: 0;">
                     <thead style="display: none;"><tr><th>الصنف</th><th>السعر</th><th>الكمية</th><th>الإجمالي</th></tr></thead>
                     <tbody id="editInvoiceItemsTable"></tbody>
@@ -205,7 +205,7 @@
             </div>
         </div>
 
-        <div class="edit-fixed-bottom-bar" style="position: absolute; bottom: 0; left: 0; right: 0; margin-bottom: 0; z-index: 90;">
+        <div class="edit-fixed-bottom-bar">
             <button class="save-edit-btn" onclick="openSaveEditModal()">تأكيد الحساب</button>
             <button class="restore-btn" onclick="restoreInvoice()">استعادة للأصل</button>
             <div class="details-total">إجمالي:<br><span id="liveEditTotal" class="color-red-val">0</span></div>
@@ -319,7 +319,7 @@
     </div>
 
     <div id="printReceiptArea"></div>
-    
+
 <script src="db.js"></script>
 <script>
     let productsDB = [];
@@ -459,17 +459,23 @@
         const searchType = searchTypeRadio ? searchTypeRadio.value : 'supplier';
         container.innerHTML = ''; 
         
+        // الترتيب السحري (بالتاريخ الأحدث أولاً، ولو نفس التاريخ يبقى بالرقم)
+// الترتيب الصارم بالوقت المخفي (Timestamp)
         let sortedInvoices = [...purchaseInvoicesDB].sort((a, b) => {
             let dateA = new Date(a.date || 0).getTime();
             let dateB = new Date(b.date || 0).getTime();
+            
             if (dateB !== dateA) return dateB - dateA;
+            
             let timeA = a.timestamp || 0;
             let timeB = b.timestamp || 0;
+            
             if (timeB !== timeA) return timeB - timeA;
+            
             return (b.id || 0) - (a.id || 0);
         });
 
-        sortedInvoices.forEach(inv => {
+sortedInvoices.forEach(inv => {
             if(!inv || inv.type === 'canceled') return;
             if (searchQuery !== '') {
                 let invIdStr = (inv.id || '').toString();
@@ -484,32 +490,24 @@
             if (dateFilterRange.type === 'exact' && inv.date !== dateFilterRange.value) return;
             if (dateFilterRange.type === 'range' && (inv.date < dateFilterRange.from || inv.date > dateFilterRange.to)) return;
 
-            const card = document.createElement('div');
+const card = document.createElement('div');
             card.className = 'invoice-card';
             
-            // تأمين تاتش القائمة عشان متفتحش وإنت بتعمل سكرول في الفواتير
-            let cardTouchStartX = 0; let cardTouchStartY = 0; let isCardScrolling = false;
-
-            card.ontouchstart = (e) => {
-                cardTouchStartX = e.touches[0].clientX;
-                cardTouchStartY = e.touches[0].clientY;
-                isCardScrolling = false;
-            };
-            
-            card.ontouchmove = (e) => {
-                let diffY = Math.abs(e.touches[0].clientY - cardTouchStartY);
-                if (diffY > 10) isCardScrolling = true;
-            };
+            // تتبع حركة اللمس على الفاتورة من الخارج
+            let startCardY = 0; let isCardScrolling = false;
+            card.ontouchstart = (e) => { startCardY = e.touches[0].clientY; isCardScrolling = false; };
+            card.ontouchmove = (e) => { if (Math.abs(e.touches[0].clientY - startCardY) > 10) isCardScrolling = true; };
 
             card.onclick = (e) => {
-                if (isCardScrolling) return; // لو سكرول مفيش قائمة تفتح
-                
+                if (isCardScrolling) return; // الغي الفتح لو العميل بيسحب الشاشة
+
+                e.stopPropagation(); closeAllMenus();
                 e.stopPropagation(); closeAllMenus();
                 selectedInvoiceId = inv.id;
                 const menu = document.getElementById('customContextMenu');
                 menu.style.display = 'block';
                 
-                let menuWidth = 210;
+ let menuWidth = 210;
                 let menuHeight = 220;
                 let screenWidth = window.innerWidth;
                 let screenHeight = window.innerHeight;
@@ -546,6 +544,7 @@
             container.appendChild(card);
         });
 
+        // التحديث اللحظي للشاشة المفتوحة
         if (document.getElementById('invoice-details-view').classList.contains('active-view') && selectedInvoiceId) {
             openInvoiceDetails(selectedInvoiceId);
         }
@@ -555,7 +554,7 @@
     function viewInvoiceFromMenu() { closeAllMenus(); openInvoiceDetails(selectedInvoiceId); }
     function printInvoiceFromMenu() { closeAllMenus(); printSingleInvoiceThermal(); }
     
-    function cancelPurchaseInvoice() {
+function cancelPurchaseInvoice() {
         closeAllMenus();
         if(!checkAdminPin()) return;
         
@@ -570,6 +569,7 @@
 
         if(confirm(`تأكيد ⚠️: هل أنت متأكد من إلغاء فاتورة الشراء رقم ${formatIdDisplay(selectedInvoiceId)}؟\n\nسيتم خصم البضاعة من المخزن واسترداد الأموال للخزنة.`)) {
             
+            // 1. خصم البضاعة من المخزن (عكس المبيعات)
             let safeItems = inv.items || [];
             safeItems.forEach(item => { 
                 let p = productsDB.find(x => x.id === item.id); 
@@ -584,6 +584,7 @@
             let subTotal = safeItems.reduce((sum, item) => sum + (item.total !== undefined ? parseFloat(item.total) : (parseFloat(item.purchasePrice) || 0) * (parseFloat(item.qty) || 0)), 0);
             let rem = subTotal - (parseFloat(inv.paid) || 0);
             
+            // 2. تظبيط حساب المورد (يتخصم من رصيده)
             if(inv.supplier && rem > 0) {
                 let sup = suppliersDB.find(c => c.name === inv.supplier);
                 if(sup) { 
@@ -592,11 +593,12 @@
                 }
             }
 
+            // 3. استرداد الأموال للخزنة
             let oldPaid = parseFloat(inv.paid) || 0;
             if (oldPaid > 0) {
                 let vData = DB.getVaults();
                 let vaultKey = inv.vault || 'main';
-                vData[vaultKey] = (parseFloat(vData[vaultKey]) || 0) + oldPaid; 
+                vData[vaultKey] = (parseFloat(vData[vaultKey]) || 0) + oldPaid; // الفلوس رجعت الخزنة
                 DB.saveVaults(vData);
 
                 let tMoves = DB.getTreasuryMoves();
@@ -608,6 +610,7 @@
                 DB.saveTreasuryMoves(tMoves);
             }
 
+            // 4. ختم الإلغاء
             inv.type = 'canceled';
             inv.notes = (inv.notes ? inv.notes + " | " : "") + "تم الإلغاء في " + new Date().toLocaleString('ar-EG');
             
@@ -654,10 +657,7 @@
         }
     }
 
-    /* ============================================================== */
-    /* الوصفة السحرية للتحكم الكامل في لمس الأصناف (ضغطة طويلة، سكرول، كليك) */
-    /* ============================================================== */
-    function renderEditTable() {
+function renderEditTable() {
         const tbody = document.getElementById('editInvoiceItemsTable');
         tbody.innerHTML = '';
         let currentSubTotal = 0;
@@ -670,7 +670,7 @@
             const tr = document.createElement('tr');
             tr.className = 'swipe-row';
             
-            // متغيرات تتبع حركة اللمس والسحب
+            // متغيرات تتبع السحب
             let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
             let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
 
@@ -680,9 +680,9 @@
                 startTime = Date.now();
                 tr.style.transition = 'none';
                 
-                // مدة الضغطة الطويلة أصبحت (1 ثانية) للحد من الفتح بالخطأ
+                // ضغطة طويلة (ثانية كاملة)
                 pressTimer = setTimeout(() => {
-                    if (isScrolling || isSwiping) return; // ممنوع الفتح أثناء السكرول
+                    if (isScrolling || isSwiping) return; 
                     isLongPress = true; isDown = false; 
                     
                     document.getElementById('editItemName').innerText = item.name;
@@ -699,14 +699,14 @@
                 let diffX = x - startX;
                 let diffY = y - startY;
                 
-                // لو اتحرك لفوق أو تحت (حتى مسافة بسيطة)، ده سكرول (يُرجى إلغاء الأوامر الأخرى)
+                // اكتشاف السكرول لفوق وتحت
                 if (Math.abs(diffY) > 8) { 
                     isScrolling = true; 
                     clearTimeout(pressTimer); 
                     return; 
                 }
 
-                // سحب يمين وشمال (للحذف)
+                // اكتشاف السحب يمين وشمال للحذف
                 if (Math.abs(diffX) > 15 && !isScrolling) { 
                     isSwiping = true; 
                     clearTimeout(pressTimer); 
@@ -722,7 +722,7 @@
                 let finalDiffX = Math.abs(x - startX);
                 let finalDiffY = Math.abs(y - startY);
 
-                if (isScrolling) return; // السكرول لا يفعل أي حدث نهائياً
+                if (isScrolling) return; // السكرول مبيعملش حاجة
 
                 if (isSwiping) {
                     let diffX = x - startX;
@@ -731,7 +731,7 @@
                         setTimeout(() => { editingInvoiceData.items.splice(index, 1); renderEditTable(); }, 200);
                     } else { tr.style.transform = 'translateX(0)'; }
                 } else if (!isLongPress) {
-                    // الزيادة فقط لو كانت تكة سريعة جداً بدون أي حركة
+                    // زيادة الكمية بالتكة السريعة فقط
                     if (touchDuration < 300 && finalDiffX < 10 && finalDiffY < 10) {
                         editingInvoiceData.items[index].qty += 1; renderEditTable();
                     }
@@ -757,7 +757,6 @@
         });
         document.getElementById('liveEditTotal').innerText = currentSubTotal.toFixed(2);
     }
-
     function searchProductsForEdit() {
         const query = document.getElementById('editProductSearch').value.trim().toLowerCase();
         const resultsDiv = document.getElementById('editProductResults');
@@ -975,6 +974,7 @@
 
     function closeSaveEditModal() { document.getElementById('saveEditModalOverlay').style.display = 'none'; }
 
+    // התحديث החדש لعرض الفاتورة (Fixed View + Audit Trail)
     function openInvoiceDetails(invoiceId) {
         const inv = purchaseInvoicesDB.find(i => i.id === invoiceId);
         if(!inv) return;
@@ -983,6 +983,7 @@
         
         let notesHtml = inv.notes ? `<div style="color:#facc15; font-weight:bold; margin-top:10px; padding-top:10px; border-top:1px dashed rgba(255,255,255,0.3);">ملاحظات: ${inv.notes}</div>` : '';
 
+        // تتبع الجهاز
         let deviceHtml = '';
         if (inv._device) {
             let editTag = (inv._lastModifiedBy && inv._lastModifiedBy !== inv._device) 
@@ -1121,6 +1122,7 @@
 
     window.onload = () => { 
         if(typeof DB !== 'undefined') DB.applySavedTheme(); 
+        // --- الافتراضي للمشتريات هو آخر 30 يوم ---
         filterByDate('اخر 30 يوم'); 
     };
 </script>
