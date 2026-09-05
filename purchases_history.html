@@ -659,32 +659,28 @@ function renderEditTable() {
             currentSubTotal += item.total;
             const tr = document.createElement('tr');
             tr.className = 'swipe-row';
-            
-            // منع تظليل الماوس اللي بيبوظ الضغطة الطويلة
-            tr.oncontextmenu = (e) => { e.preventDefault(); return false; };
 
-            let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
-            let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
+            // نفس متغيرات فاتورة البيع بالظبط مع إضافة المحور الصادي (Y) للسكرول
+            let startX = 0; let startY = 0; 
+            let isDown = false; let isSwiping = false; let isLongPress = false; let pressTimer;
 
             const startAction = (x, y) => {
                 startX = x; startY = y; 
-                isDown = true; isSwiping = false; isLongPress = false; isScrolling = false;
-                startTime = Date.now();
+                isDown = true; isSwiping = false; isLongPress = false;
                 tr.style.transition = 'none';
                 
-                // ضغطة طويلة 800 مللي ثانية للكمبيوتر والموبايل
+                // الضغطة الطويلة 600 مللي ثانية (زي المبيعات بالملي)
                 pressTimer = setTimeout(() => {
-                    if (isScrolling || isSwiping) return; 
                     isLongPress = true; isDown = false; 
                     
-                    // 1. تعبئة البيانات الأساسية
+                    // -- تعبئة بيانات التعديل --
                     document.getElementById('editItemName').innerText = item.name;
                     if(document.getElementById('editItemPrice')) document.getElementById('editItemPrice').value = item.purchasePrice || item.price;
                     if(document.getElementById('editItemSellPrice')) document.getElementById('editItemSellPrice').value = item.sellPrice || item.price;
                     document.getElementById('editItemQty').value = item.qty;
                     document.getElementById('editItemIndex').value = index;
 
-                    // 2. جلب تفاصيل المخزن (الأرصدة والموردين) للمقارنة
+                    // -- جلب تفاصيل المخزن والمقارنة --
                     let p = productsDB.find(x => String(x.id) === String(item.id));
                     let slider = document.getElementById('editBatchesSlider');
                     if (slider) {
@@ -721,9 +717,8 @@ function renderEditTable() {
                         if(detailsBox) detailsBox.style.display = 'none';
                     }
 
-                    // 3. فتح النافذة أخيراً
                     document.getElementById('editItemModal').style.display = 'flex';
-                }, 800); 
+                }, 600); 
             };
 
             const moveAction = (x, y) => {
@@ -731,73 +726,49 @@ function renderEditTable() {
                 let diffX = x - startX;
                 let diffY = y - startY;
                 
-                // لو الماوس اتحرك أكتر من 20 بيكسل نلغي الضغطة ونعتبره سكرول
-                if (Math.abs(diffY) > 20) { 
-                    isScrolling = true; 
+                // حماية السكرول: لو الصباع نزل أو طلع، نلغي الضغطة الطويلة فوراً
+                if (Math.abs(diffY) > 15) { 
                     clearTimeout(pressTimer); 
                     return; 
                 }
 
-                if (Math.abs(diffX) > 20 && !isScrolling) { 
+                if (Math.abs(diffX) > 15) { 
                     isSwiping = true; 
                     clearTimeout(pressTimer); 
                     tr.style.transform = `translateX(${diffX}px)`; 
-                    tr.style.opacity = `${1 - Math.abs(diffX) / 300}`;
                 }
             };
 
-            const endAction = (x, y) => {
+            const endAction = (x) => {
                 if (!isDown && !isSwiping) return; 
                 isDown = false; clearTimeout(pressTimer); 
+                tr.style.transition = 'transform 0.2s ease-out';
                 
-                let touchDuration = Date.now() - startTime;
-                let finalDiffX = Math.abs(x - startX);
-                let finalDiffY = Math.abs(y - startY);
-
-                if (isScrolling) {
-                    tr.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-                    tr.style.transform = 'translateX(0)';
-                    tr.style.opacity = '1';
-                    return; 
-                }
-
                 if (isSwiping) {
                     let diffX = x - startX;
-                    if (Math.abs(diffX) > 90) {
-                        tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-                        tr.style.transform = `translateX(${diffX > 0 ? 100 : -100}%)`; 
-                        tr.style.opacity = '0';
-                        setTimeout(() => { editingInvoiceData.items.splice(index, 1); renderEditTable(); }, 250);
-                    } else {
-                        tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                    if (Math.abs(diffX) > 80) {
+                        tr.style.transform = diffX > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+                        setTimeout(() => { editingInvoiceData.items.splice(index, 1); renderEditTable(); }, 200);
+                    } else { 
                         tr.style.transform = 'translateX(0)'; 
-                        tr.style.opacity = '1';
                     }
                 } else if (!isLongPress) {
-                    // التكة السريعة تزود العدد
-                    if (touchDuration < 400 && finalDiffX < 20 && finalDiffY < 20) {
-                        tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                        tr.style.transform = 'translateX(0)'; 
-                        tr.style.opacity = '1';
-
-                        let updatedItem = editingInvoiceData.items.splice(index, 1)[0];
-                        updatedItem.qty += 1;
-                        editingInvoiceData.items.unshift(updatedItem); 
-                        renderEditTable();
-                    }
+                    // لو مش ضغطة طويلة ومفيش سحب، يزود العدد فوراً
+                    editingInvoiceData.items[index].qty += 1; renderEditTable();
                 }
-                isSwiping = false; isScrolling = false;
+                isSwiping = false;
             };
 
+            // أحداث الموبايل (التاتش)
             tr.ontouchstart = (e) => { startAction(e.touches[0].clientX, e.touches[0].clientY); };
             tr.ontouchmove = (e) => { moveAction(e.touches[0].clientX, e.touches[0].clientY); };
-            tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); };
+            tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX); };
             
-            // أحداث الماوس (مع الغاء التظليل)
-            tr.onmousedown = (e) => { e.preventDefault(); startAction(e.clientX, e.clientY); };
+            // أحداث الكمبيوتر (الماوس)
+            tr.onmousedown = (e) => { startAction(e.clientX, e.clientY); };
             tr.onmousemove = (e) => { moveAction(e.clientX, e.clientY); };
-            tr.onmouseup = (e) => { endAction(e.clientX, e.clientY); };
-            tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX, e.clientY); };
+            tr.onmouseup = (e) => { endAction(e.clientX); };
+            tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX); };
 
             tr.innerHTML = `
                 <td style="text-align: right; font-weight:bold; color: #ffffff;">${item.name}</td>
