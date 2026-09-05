@@ -263,9 +263,18 @@
         <div onclick="printInvoiceFromMenu()">طباعة الفاتورة (حراري)</div>
     </div>
 
-    <div class="modal-overlay" id="editItemModal">
+<div class="modal-overlay" id="editItemModal">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="modal-header"><h3 id="editItemName">تعديل الصنف</h3></div>
+            
+            <!-- الزرار والمربع المخفي (جديد) -->
+            <button class="details-toggle-btn" onclick="toggleDetails()">+ عرض تفاصيل المخزن والمورد</button>
+            <div class="hidden-details" id="hiddenDetailsBox">
+                <p>الرصيد بالمخزن: <strong id="editStockInfo">0</strong></p>
+                <p>المورد السابق: <strong id="editSupplier">---</strong></p>
+            </div>
+            
+            <!-- باقي الحقول زي ما هي -->
             <div class="compact-row"><label>سعر الشراء:</label><input type="number" id="editItemPrice" onclick="this.select()"></div>
             <div class="compact-row"><label>سعر البيع للجمهور:</label><input type="number" id="editItemSellPrice" onclick="this.select()"></div>
             <div class="compact-row"><label>الكمية المشتراة:</label><input type="number" id="editItemQty" onclick="this.select()"></div>
@@ -680,19 +689,7 @@ function renderEditTable() {
                 startTime = Date.now();
                 tr.style.transition = 'none';
                 
-                // ضغطة طويلة (ثانية كاملة)
-                pressTimer = setTimeout(() => {
-                    if (isScrolling || isSwiping) return; 
-                    isLongPress = true; isDown = false; 
-                    
-                    document.getElementById('editItemName').innerText = item.name;
-                    document.getElementById('editItemPrice').value = item.purchasePrice;
-                    document.getElementById('editItemSellPrice').value = item.price || item.sellPrice || item.purchasePrice;
-                    document.getElementById('editItemQty').value = item.qty;
-                    document.getElementById('editItemIndex').value = index;
-                    document.getElementById('editItemModal').style.display = 'flex';
-                }, 1000);
-            };
+renderEditTable()
 
             const moveAction = (x, y) => {
                 if (!isDown) return;
@@ -1119,7 +1116,10 @@ function renderEditTable() {
         XLSX.utils.book_append_sheet(wb, ws, "الفاتورة");
         XLSX.writeFile(wb, `Purchase_Invoice_${formatIdDisplay(inv.id)}.xlsx`);
     }
-
+function toggleDetails() {
+        const box = document.getElementById('hiddenDetailsBox');
+        box.style.display = box.style.display === 'block' ? 'none' : 'block';
+    }
     window.onload = () => { 
         if(typeof DB !== 'undefined') DB.applySavedTheme(); 
         // --- الافتراضي للمشتريات هو آخر 30 يوم ---
