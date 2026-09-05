@@ -349,7 +349,43 @@
             document.getElementById('invoice-footer-text').value = localStorage.getItem('seraj_invoice_footer') || '';
             document.getElementById('printer-settings-modal').style.display = 'flex';
         }
+// دوال إعدادات المتجر (التي تم مسحها بالغلط)
+        function openSettings() {
+            document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
+            document.getElementById('set-ai-key').value = localStorage.getItem('seraj_ai_key') || '';
+            document.getElementById('set-new-pass').value = ''; 
+            document.getElementById('seraj-settings-modal').style.display = 'flex';
+        }
 
+        function closeSettings() {
+            document.getElementById('seraj-settings-modal').style.display = 'none';
+        }
+
+        function saveSettings() {
+            let sName = document.getElementById('set-store-name').value.trim();
+            let aiKey = document.getElementById('set-ai-key').value.trim();
+            let newPass = document.getElementById('set-new-pass').value.trim();
+            let storeId = localStorage.getItem('seraj_store_id');
+
+            if (sName !== "") localStorage.setItem('seraj_store_name', sName);
+            if (aiKey !== "") localStorage.setItem('seraj_ai_key', aiKey);
+
+            if (newPass !== "") {
+                if (window.dbCloud && storeId) {
+                    window.dbCloud.ref('Admin_Users/' + storeId).update({ password: newPass });
+                    localStorage.setItem('seraj_store_pass', newPass); 
+                    alert("تم تغيير كلمة المرور وحفظ الإعدادات بنجاح! 🔒");
+                }
+            } else {
+                alert("تم حفظ الإعدادات بنجاح! ✅");
+            }
+            
+            // إيقاف النبض الضوئي لزر القائمة بعد التسجيل
+            let menuBtn = document.getElementById('main-menu-btn');
+            if (menuBtn) menuBtn.classList.remove('needs-setup');
+
+            closeSettings();
+        }
         function closePrinterSettings() {
             document.getElementById('printer-settings-modal').style.display = 'none';
         }
