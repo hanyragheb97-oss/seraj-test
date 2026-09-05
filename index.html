@@ -155,21 +155,53 @@
         <img src="icon.png" alt="سراج كاشير" style="width:100%; height:100%; object-fit:cover;">
     </div>
 
-    <!-- ⚙️ زر الترس العائم -->
-    <button onclick="openSettings()" style="position:fixed; top:20px; left:20px; background:#f59e0b; border:none; border-radius:50%; width:50px; height:50px; font-size:24px; cursor:pointer; z-index:9999; box-shadow:0 0 15px rgba(245,158,11,0.5); transition: transform 0.2s;">⚙️</button>
+<!-- ☰ زر القائمة الجانبية -->
+    <button onclick="toggleSidebar()" style="position:fixed; top:20px; right:20px; background:#f59e0b; border:none; border-radius:8px; width:50px; height:50px; font-size:28px; color:#000; cursor:pointer; z-index:9999; box-shadow:0 0 15px rgba(245,158,11,0.5);">☰</button>
 
-    <!-- 🛠️ نافذة الإعدادات المنبثقة (Modal) -->
-    <div id="seraj-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
-        <div style="background:#1e1e1e; padding:30px; border-radius:15px; border:1px solid #f59e0b; width:90%; max-width:400px; text-align:center; box-shadow:0 0 20px rgba(245,158,11,0.2);">
+    <!-- 🌑 خلفية مظلمة عند فتح القائمة -->
+    <div id="sidebar-overlay" onclick="toggleSidebar()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99998; backdrop-filter:blur(3px);"></div>
+
+    <!-- 📋 القائمة الجانبية المنزلقة -->
+    <div id="main-sidebar" style="position:fixed; top:0; right:-300px; width:280px; height:100%; background:var(--card-bg, #1e1e1e); border-left:2px solid var(--neon-border, #a855f7); z-index:99999; transition: right 0.3s ease; padding:20px; box-sizing:border-box; overflow-y:auto; font-family:'Tajawal', sans-serif;">
+        <h2 style="color:#fff; text-align:center; border-bottom:1px solid #555; padding-bottom:15px; margin-top:0;">القائمة الرئيسية</h2>
+        
+        <!-- أزرار القائمة -->
+        <button onclick="openSettings(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">⚙️ إعدادات المتجر</button>
+        <button onclick="openPrinterSettings(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">🖨️ إعدادات الطابعة</button>
+        <button onclick="alert('جاري البرمجة...'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">💰 إعدادات الخزينة</button>
+        <button onclick="alert('جاري البرمجة...'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">💾 حفظ نسخة من البيانات</button>
+        <button onclick="alert('جاري البرمجة...'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">🚀 تفعيل التطبيق</button>
+        <button onclick="window.open('https://wa.me/201000000000', '_blank'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#128C7E; color:#fff; border:none; border-radius:8px; font-size:16px; text-align:right; cursor:pointer;">📞 الاتصال بالدعم الفني</button>
+    </div>
+
+    <!-- 🛠️ نافذة إعدادات المتجر (القديمة) -->
+    <div id="seraj-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
+        <div style="background:#1e1e1e; padding:30px; border-radius:15px; border:1px solid #f59e0b; width:90%; max-width:400px; text-align:center;">
+            <h2 style="color:#f59e0b; margin-top:0;">إعدادات المتجر ⚙️</h2>
+            <input type="text" id="set-store-name" placeholder="اسم المحل (يظهر على الفواتير)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
+            <input type="password" id="set-new-pass" placeholder="كلمة المرور الجديدة (اختياري)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
+            <input type="password" id="set-ai-key" placeholder="مفتاح الذكاء الاصطناعي (API Key)" style="width:100%; padding:12px; margin-bottom:25px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box;">
+            <button onclick="saveSettings()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; font-weight:bold; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px;">حفظ الإعدادات 💾</button>
+            <button onclick="closeSettings()" style="width:100%; padding:15px; background:#444; color:#fff; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">إلغاء ❌</button>
+        </div>
+    </div>
+
+    <!-- 🖨️ نافذة إعدادات الطابعة (الجديدة) -->
+    <div id="printer-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
+        <div style="background:#1e1e1e; padding:30px; border-radius:15px; border:1px solid #00bfff; width:90%; max-width:400px; text-align:right;">
+            <h2 style="color:#00bfff; margin-top:0; text-align:center;">إعدادات الطابعة 🖨️</h2>
             
-            <h2 style="color:#f59e0b; margin-top:0; margin-bottom:20px;">إعدادات المتجر ⚙️</h2>
+            <label style="color:#fff; margin-bottom:8px; display:block;">نوع الاتصال:</label>
+            <select id="printer-type" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px;">
+                <option value="usb">كابل (USB)</option>
+                <option value="bluetooth">بلوتوث (Bluetooth)</option>
+            </select>
 
-            <input type="text" id="set-store-name" placeholder="اسم المحل (يظهر على الفواتير)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:16px;">
-            <input type="password" id="set-new-pass" placeholder="كلمة المرور الجديدة (اختياري)" style="width:100%; padding:12px; margin-bottom:15px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:14px;">
-            <input type="password" id="set-ai-key" placeholder="مفتاح الذكاء الاصطناعي (API Key)" style="width:100%; padding:12px; margin-bottom:25px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; font-size:14px;">
-
-            <button onclick="saveSettings()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00ff66, #00cc55); color:#000; font-size:18px; font-weight:bold; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px;">حفظ الإعدادات 💾</button>
-            <button onclick="closeSettings()" style="width:100%; padding:15px; background:#444; color:#fff; font-size:16px; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">إلغاء ❌</button>
+            <label style="color:#fff; margin-bottom:8px; display:block;">نص أسفل الفاتورة (اختياري):</label>
+            <textarea id="invoice-footer-text" placeholder="مثال: البضاعة المباعة لا ترد ولا تستبدل إلا خلال 14 يوم" style="width:100%; padding:12px; margin-bottom:25px; background:#333; color:#fff; border:1px solid #555; border-radius:8px; box-sizing:border-box; resize:vertical; min-height:80px;"></textarea>
+            
+            <button onclick="savePrinterSettings()" style="width:100%; padding:15px; background:linear-gradient(45deg, #00bfff, #0077ff); color:#fff; font-weight:bold; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px;">حفظ إعدادات الطابعة 💾</button>
+            <button onclick="closePrinterSettings()" style="width:100%; padding:15px; background:#444; color:#fff; font-weight:bold; border:none; border-radius:8px; cursor:pointer;">إلغاء ❌</button>
         </div>
     </div>
 
@@ -257,12 +289,39 @@
             }
         });
 
-        // 2. دوال الإعدادات (الترس ⚙️)
-        function openSettings() {
-            document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
-            document.getElementById('set-ai-key').value = localStorage.getItem('seraj_ai_key') || '';
-            document.getElementById('set-new-pass').value = ''; 
-            document.getElementById('seraj-settings-modal').style.display = 'flex';
+// دوال القائمة الجانبية
+        function toggleSidebar() {
+            let sidebar = document.getElementById('main-sidebar');
+            let overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.style.right === '0px') {
+                sidebar.style.right = '-300px';
+                overlay.style.display = 'none';
+            } else {
+                sidebar.style.right = '0px';
+                overlay.style.display = 'block';
+            }
+        }
+
+        // دوال إعدادات الطابعة
+        function openPrinterSettings() {
+            document.getElementById('printer-type').value = localStorage.getItem('seraj_printer_type') || 'usb';
+            document.getElementById('invoice-footer-text').value = localStorage.getItem('seraj_invoice_footer') || '';
+            document.getElementById('printer-settings-modal').style.display = 'flex';
+        }
+
+        function closePrinterSettings() {
+            document.getElementById('printer-settings-modal').style.display = 'none';
+        }
+
+        function savePrinterSettings() {
+            let pType = document.getElementById('printer-type').value;
+            let pText = document.getElementById('invoice-footer-text').value.trim();
+            
+            localStorage.setItem('seraj_printer_type', pType);
+            localStorage.setItem('seraj_invoice_footer', pText);
+            
+            alert("تم حفظ إعدادات الطابعة بنجاح! ✅");
+            closePrinterSettings();
         }
 
         function closeSettings() {
