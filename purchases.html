@@ -578,44 +578,68 @@
             document.getElementById('editModalOverlay').style.display = 'flex';
         }
 
-        function saveItemEdit() {
-            let newPPrice = parseFloat(document.getElementById('editPrice').value) || 0;
-            let newSPrice = parseFloat(document.getElementById('editSellPrice').value) || 0;
-            let newQty = parseFloat(document.getElementById('editQty').value) || 1;
+     function saveItemEdit() {
+        let newPPrice = parseFloat(document.getElementById('editPrice').value) || 0;
+        let newSPrice = parseFloat(document.getElementById('editSellPrice').value) || 0;
+        let newQty = parseFloat(document.getElementById('editQty').value) || 1;
 
-            if (newPPrice > newSPrice) {
-                alert(`❌ تنبيه: سعر الشراء أعلى من البيع! يرجى المراجعة.`);
-                return; 
-            }
+        if (newPPrice > newSPrice) {
+            alert(`❌ تنبيه: سعر الشراء (${newPPrice}) أعلى من سعر البيع (${newSPrice})! يرجى المراجعة.`);
+            return; 
+        }
 
-            let indexVal = document.getElementById('editItemIndex').value;
+        let indexVal = String(document.getElementById('editItemIndex').value).trim();
 
-            if (indexVal.startsWith('new_')) {
-                let prodId = String(indexVal.split('_')[1]); 
-                let p = productsDB.find(x => String(x.id) === prodId);
+        if (indexVal.startsWith('new_')) {
+            // التعديل: هنا هنستخرج الـ ID بذكاء عشان نتجنب أي تقطيع غلط
+            let prodId = indexVal.replace('new_', ''); 
+            
+            // البحث عن الصنف، حولنا الاتنين لنص (String) لضمان التطابق 100% مع أصناف الإكسيل
+            let p = productsDB.find(x => String(x.id) === prodId);
+            
+            if (p) {
+                const existingIndex = invoice.findIndex(item => String(item.id) === String(p.id));
                 
-                if(p) {
-                    const existing = invoice.findIndex(item => String(item.id) === String(p.id));
-                    if(existing > -1) {
-                        invoice[existing].qty += newQty; 
-                        invoice[existing].purchasePrice = newPPrice;
-                        invoice[existing].sellPrice = newSPrice;
-                    } else {
-                        invoice.unshift({ ...p, purchasePrice: newPPrice, sellPrice: newSPrice, qty: newQty });
-                    }
+                if (existingIndex > -1) {
+                    // لو الصنف موجود في الفاتورة، هنزود كميته ونحدث أسعاره
+                    invoice[existingIndex].qty += newQty; 
+                    invoice[existingIndex].purchasePrice = newPPrice;
+                    invoice[existingIndex].sellPrice = newSPrice;
+                    // تحديث الإجمالي للسطر ده (السعر × الكمية)
+                    invoice[existingIndex].total = newPPrice * invoice[existingIndex].qty;
+                } else {
+                    // لو الصنف جديد، هنضيفه للفاتورة من فوق (unshift)
+                    invoice.unshift({ 
+                        ...p, 
+                        purchasePrice: newPPrice, 
+                        sellPrice: newSPrice, 
+                        qty: newQty,
+                        total: newPPrice * newQty 
+                    });
                 }
             } else {
-                let idx = parseInt(indexVal);
+                console.error("لم يتم العثور على الصنف في المخزن! ID: " + prodId);
+                alert("حدث خطأ: لم يتم العثور على بيانات هذا الصنف.");
+                return;
+            }
+        } else {
+            // ده في حالة التعديل على صنف موجود فعلاً جوه الجدول
+            let idx = parseInt(indexVal);
+            if (!isNaN(idx) && invoice[idx]) {
                 invoice[idx].purchasePrice = newPPrice;
                 invoice[idx].sellPrice = newSPrice;
                 invoice[idx].qty = newQty;
+                invoice[idx].total = newPPrice * newQty;
             }
-
-            saveDraft(); 
-            closeModals(); 
-            renderTable();
         }
 
+        saveDraft(); 
+        closeModals(); 
+        renderTable();
+        // التركيز مرة تانية على مربع البحث لسرعة إدخال الصنف اللي بعده
+        let searchInput = document.getElementById('productSearch');
+        if(searchInput) searchInput.focus();
+    }
 function renderTable() {
             const tbody = document.getElementById('invoiceItems');
             tbody.innerHTML = ''; let subTotal = 0;
