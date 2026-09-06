@@ -384,12 +384,8 @@
         }
     }
 
-    function checkAdminPin() {
-        let settings = JSON.parse(localStorage.getItem('seraj_treasury_settings')) || { pin: '1234' };
-        let entered = prompt("🔒 هذه الصلاحية للمدير فقط. برجاء إدخال الرقم السري:");
-        if (entered === settings.pin) return true;
-        if (entered !== null) alert("الرقم السري غير صحيح ❌");
-        return false;
+function checkAdminPin() {
+        return true; // إلغاء طلب الرقم السري نهائياً والسماح بالتعديل والحذف مباشرة
     }
 
     function closeAllMenus(e) {
