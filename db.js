@@ -1,9 +1,7 @@
-// 🌟 محرك سراج كاشير (نسخة التزامن اللحظي الدقيق - Online First)
+// 🌟 محرك سراج كاشير (النسخة الاحترافية - الأوفلاين الذكي والتزامن السريع)
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-            .then(() => console.log('✅ تم تشغيل الكاش السريع.'))
-            .catch(e => console.error('❌ فشل تشغيل الكاش:', e));
+        navigator.serviceWorker.register('/sw.js').catch(e => console.error(e));
     });
 }
 
@@ -42,7 +40,8 @@ function initCloud() {
             firebase.initializeApp(firebaseConfig);
             window.dbCloud = firebase.database();
             cloudReady = true;
-            showCloudStatus('⚡ متصل بالسحابي لحظياً: ' + currentStoreId);
+            showCloudStatus('⚡ متصل بالسحابي: ' + currentStoreId);
+            processSyncQueue(); // رفع أي حاجة كانت أوفلاين أول ما النت يشتغل
             startSmartRadars(); 
         };
     };
@@ -61,16 +60,71 @@ function showCloudStatus(msg) {
 }
 
 // ---------------------------------------------------------
-// 1. الاستقبال اللحظي من السحابي (Listening)
+// 1. نظام الطابور (Sync Queue) لرفع بيانات الأوفلاين
 // ---------------------------------------------------------
+function addToSyncQueue(colName, itemData) {
+    let queue = JSON.parse(localStorage.getItem('seraj_sync_queue') || '[]');
+    // التأكد من عدم تكرار نفس الفاتورة في الطابور
+    queue = queue.filter(q => !(q.col === colName && q.data.id === itemData.id)); 
+    queue.push({ col: colName, data: itemData });
+    localStorage.setItem('seraj_sync_queue', JSON.stringify(queue));
+    processSyncQueue();
+}
+
+function processSyncQueue() {
+    if (!cloudReady || !navigator.onLine) return;
+    let queue = JSON.parse(localStorage.getItem('seraj_sync_queue') || '[]');
+    if (queue.length === 0) return;
+
+    showCloudStatus("⏳ جاري مزامنة بيانات الأوفلاين للسحابة...");
+
+    queue.forEach(q => {
+        let safeId = String(q.data.id).replace(/[.#$\[\]]/g, "_");
+        let cloudRefName = 'test_Stores/' + currentStoreId + '/' + q.col + '/' + safeId;
+        
+        window.dbCloud.ref(cloudRefName).set(q.data)
+            .then(() => {
+                // الفاتورة اترفعت بنجاح، نمسحها من الطابور
+                let currentQueue = JSON.parse(localStorage.getItem('seraj_sync_queue') || '[]');
+                currentQueue = currentQueue.filter(item => !(item.col === q.col && item.data.id === q.data.id));
+                localStorage.setItem('seraj_sync_queue', JSON.stringify(currentQueue));
+            }).catch(e => console.error("Sync Error", e));
+    });
+}
+
+// مراقبة رجوع النت عشان نرفع الطابور فوراً
+window.addEventListener('online', () => {
+    showCloudStatus("🌐 عاد الاتصال بالإنترنت! جاري الرفع...");
+    if(cloudReady) processSyncQueue();
+});
+
+// مقارنة البيانات لمعرفة التعديل الجديد ووضعه في الطابور
+function saveArrayToQueueSafely(colName, newArray) {
+    let oldArray = JSON.parse(localStorage.getItem('seraj_cloud_cache_' + colName) || '[]');
+    let oldMap = new Map(oldArray.map(i => [String(i.id), i]));
+    
+    newArray.forEach(newItem => {
+        let id = String(newItem.id);
+        let oldItem = oldMap.get(id);
+        if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(newItem)) {
+            addToSyncQueue(colName, newItem); // أضف فقط العناصر المعدلة للطابور
+        }
+    });
+    localStorage.setItem('seraj_cloud_cache_' + colName, JSON.stringify(newArray));
+}
+
+// ---------------------------------------------------------
+// 2. نظام الاستقبال السريع (Debouncing) لحل مشكلة التقل
+// ---------------------------------------------------------
+let localCollectionsCache = {};
+let renderTimers = {};
+
 function startSmartRadars() {
     if(!cloudReady) return;
     const collections = ['products', 'customers', 'sales_invoices', 'suppliers', 'purchase_invoices', 'treasury_moves'];
     
     collections.forEach(col => {
-        let cloudRefName = 'test_Stores/' + currentStoreId + '/' + col; 
-        let ref = window.dbCloud.ref(cloudRefName);
-        
+        let ref = window.dbCloud.ref('test_Stores/' + currentStoreId + '/' + col);
         ref.on('child_added', snap => updateLocalSingleItem(col, snap.val()));
         ref.on('child_changed', snap => updateLocalSingleItem(col, snap.val()));
         ref.on('child_removed', snap => removeLocalSingleItem(col, snap.key));
@@ -85,28 +139,38 @@ function startSmartRadars() {
 }
 
 function updateLocalSingleItem(col, data) {
-    let localArray = JSON.parse(localStorage.getItem('seraj_' + col) || '[]');
-    let docId = String(data.id);
-    let existingIndex = localArray.findIndex(item => String(item.id) === docId);
-    
-    if (existingIndex > -1) {
-        // تحديث فقط لو البيانات اللي جاية من السحاب أحدث أو مختلفة
-        if (JSON.stringify(localArray[existingIndex]) !== JSON.stringify(data)) {
-            localArray[existingIndex] = data;
-        } else {
-            return; // مفيش تغيير
-        }
-    } else {
-        localArray.push(data);
+    if (!localCollectionsCache[col]) {
+        localCollectionsCache[col] = JSON.parse(localStorage.getItem('seraj_' + col) || '[]');
     }
     
-    saveAndRenderLocal(col, localArray);
+    let arr = localCollectionsCache[col];
+    let docId = String(data.id);
+    let existingIndex = arr.findIndex(item => String(item.id) === docId);
+    
+    if (existingIndex > -1) {
+        if (JSON.stringify(arr[existingIndex]) === JSON.stringify(data)) return;
+        arr[existingIndex] = data;
+    } else {
+        arr.push(data);
+    }
+    
+    // السر هنا: بنجمع كل التحديثات ونرسم الشاشة مرة واحدة بس بعد ما تهدأ
+    if (renderTimers[col]) clearTimeout(renderTimers[col]);
+    renderTimers[col] = setTimeout(() => {
+        saveAndRenderLocal(col, localCollectionsCache[col]);
+    }, 800); // رسم واحد بعد 800 مللي ثانية
 }
 
 function removeLocalSingleItem(col, docId) {
-    let localArray = JSON.parse(localStorage.getItem('seraj_' + col) || '[]');
-    localArray = localArray.filter(item => String(item.id) !== docId);
-    saveAndRenderLocal(col, localArray);
+    if (!localCollectionsCache[col]) {
+        localCollectionsCache[col] = JSON.parse(localStorage.getItem('seraj_' + col) || '[]');
+    }
+    localCollectionsCache[col] = localCollectionsCache[col].filter(item => String(item.id) !== docId);
+    
+    if (renderTimers[col]) clearTimeout(renderTimers[col]);
+    renderTimers[col] = setTimeout(() => {
+        saveAndRenderLocal(col, localCollectionsCache[col]);
+    }, 800);
 }
 
 function saveAndRenderLocal(col, localArray) {
@@ -114,8 +178,8 @@ function saveAndRenderLocal(col, localArray) {
         localArray.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0) || (b.id || 0) - (a.id || 0));
     }
     localStorage.setItem('seraj_' + col, JSON.stringify(localArray));
+    localStorage.setItem('seraj_cloud_cache_' + col, JSON.stringify(localArray)); 
     
-    // تحديث الشاشة
     try {
         if(col === 'products' && typeof renderInventoryTable === 'function') renderInventoryTable();
         if(col === 'sales_invoices' && typeof renderInvoicesHistory === 'function') renderInvoicesHistory();
@@ -127,57 +191,35 @@ function saveAndRenderLocal(col, localArray) {
     } catch(e) {}
 }
 
-// ---------------------------------------------------------
-// 2. الرفع اللحظي الدقيق (Uploading) - كل عنصر لوحده
-// ---------------------------------------------------------
-// دي الدالة السحرية الجديدة: بتاخد العنصر الفردي اللي إتغير وترفعه لوحده
-function uploadSingleItemSafely(colName, itemData) {
-    if(!cloudReady || !navigator.onLine) {
-        // لو مفيش نت، بنحفظه محلي، والفايربيس (firebase-database.js) ذكي كفاية إنه هيعمله طابور ويرفعه لما النت ييجي
-        return; 
-    }
-    let safeId = String(itemData.id).replace(/[.#$\[\]]/g, "_"); 
-    let cloudRefName = 'test_Stores/' + currentStoreId + '/' + colName + '/' + safeId;
-    window.dbCloud.ref(cloudRefName).set(itemData).catch(e => console.error("Error Syncing:", e));
-}
-
-function syncFullArray(colName, array) {
-    // دي الدالة اللي البرنامج بيستدعيها. بدل ما نرفع كل الـ Array، هنلوب عليها ونرفع اللي ملوش timestamp أو لسه معمول
-    array.forEach(item => {
-        uploadSingleItemSafely(colName, item);
-    });
-}
-
-
 const DB = {
     syncFromCloud: function() { return Promise.resolve(); },
     
     getProducts: function() { return JSON.parse(localStorage.getItem('seraj_products')) || []; },
-    saveProducts: function(data) { localStorage.setItem('seraj_products', JSON.stringify(data)); syncFullArray('products', data); },
+    saveProducts: function(data) { localStorage.setItem('seraj_products', JSON.stringify(data)); saveArrayToQueueSafely('products', data); },
     
     getCustomers: function() { return JSON.parse(localStorage.getItem('seraj_customers')) || []; },
-    saveCustomers: function(data) { localStorage.setItem('seraj_customers', JSON.stringify(data)); syncFullArray('customers', data); },
+    saveCustomers: function(data) { localStorage.setItem('seraj_customers', JSON.stringify(data)); saveArrayToQueueSafely('customers', data); },
     
     getSalesInvoices: function() { return JSON.parse(localStorage.getItem('seraj_sales_invoices')) || []; },
     saveSalesInvoices: function(data) { 
         data.forEach(inv => { if (!inv.timestamp) inv.timestamp = Date.now(); });
         localStorage.setItem('seraj_sales_invoices', JSON.stringify(data)); 
-        syncFullArray('sales_invoices', data); 
+        saveArrayToQueueSafely('sales_invoices', data); 
     },
     
     getSuppliers: function() { return JSON.parse(localStorage.getItem('seraj_suppliers')) || []; },
-    saveSuppliers: function(data) { localStorage.setItem('seraj_suppliers', JSON.stringify(data)); syncFullArray('suppliers', data); },
+    saveSuppliers: function(data) { localStorage.setItem('seraj_suppliers', JSON.stringify(data)); saveArrayToQueueSafely('suppliers', data); },
     
     getPurchaseInvoices: function() { return JSON.parse(localStorage.getItem('seraj_purchase_invoices')) || []; },
-    savePurchaseInvoices: function(data) { localStorage.setItem('seraj_purchase_invoices', JSON.stringify(data)); syncFullArray('purchase_invoices', data); },
+    savePurchaseInvoices: function(data) { localStorage.setItem('seraj_purchase_invoices', JSON.stringify(data)); saveArrayToQueueSafely('purchase_invoices', data); },
     
     getTreasuryMoves: function() { return JSON.parse(localStorage.getItem('seraj_treasury_moves')) || []; },
-    saveTreasuryMoves: function(data) { localStorage.setItem('seraj_treasury_moves', JSON.stringify(data)); syncFullArray('treasury_moves', data); },
+    saveTreasuryMoves: function(data) { localStorage.setItem('seraj_treasury_moves', JSON.stringify(data)); saveArrayToQueueSafely('treasury_moves', data); },
     
     getVaults: function() { return JSON.parse(localStorage.getItem('seraj_vaults_v2')) || { main: 0, insta: 0, wallet: 0 }; },
     saveVaults: function(data) { 
         localStorage.setItem('seraj_vaults_v2', JSON.stringify(data)); 
-        if(cloudReady) window.dbCloud.ref('test_Stores/' + currentStoreId + '/vaults_v2').set(data); 
+        if(cloudReady && navigator.onLine) window.dbCloud.ref('test_Stores/' + currentStoreId + '/vaults_v2').set(data); 
     },
     
     applySavedTheme: function() {
