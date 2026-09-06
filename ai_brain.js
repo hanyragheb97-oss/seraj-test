@@ -378,7 +378,7 @@ async function sendMessage() {
         const cleanKey = savedKey.replace(/[^a-zA-Z0-9_.\-]/g, ''); 
         const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + cleanKey;
 
-        // 4. إرسال الطلب لجوجل
+// 4. إرسال الطلب لجوجل
         const response = await fetch(finalUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -388,10 +388,14 @@ async function sendMessage() {
         const data = await response.json();
 
         if (!response.ok) {
-            let errorMsg = "❌ تم مؤقتاً إيقاف الطلبات من جوجل، انتظر ثوان معدودة وجرب تاني.";
+            // التعديل: إظهار سبب الرفض الحقيقي من جوجل
+            let googleReason = data.error ? data.error.message : "سبب غير معروف";
+            let errorMsg = "❌ جوجل رفضت الطلب والسبب: <br><span style='color:red; font-size:12px;'>" + googleReason + "</span>";
+            console.error("تفاصيل الخطأ من جوجل:", data);
+            
             document.getElementById(loaderId).parentElement.innerHTML = errorMsg;
             saveHistory('bot', errorMsg, null);
-            speakArabic("الرجاء الانتظار قليلاً ثم المحاولة");
+            speakArabic("جوجل رفضت الطلب، راجع الرسالة المكتوبة");
             return;
         }
         const reply = data.candidates[0].content.parts[0].text;
