@@ -376,8 +376,7 @@ async function sendMessage() {
 
         // 3. تنظيف المفتاح وتجهيز الرابط
         const cleanKey = savedKey.replace(/[^a-zA-Z0-9_.\-]/g, ''); 
-        const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + cleanKey;
-
+    const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=" + cleanKey;
 // 4. إرسال الطلب لجوجل
         const response = await fetch(finalUrl, {
             method: 'POST',
