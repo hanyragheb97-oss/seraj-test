@@ -290,6 +290,44 @@
             </div>
         </div>
     </div>
+
+                <input type="date" id="modalDate" onclick="this.select()">
+            </div>
+            
+            <div class="compact-row">
+                <label>الخزينة (استرداد/دفع)</label>
+                <select id="modalVaultSelect">
+                    <option value="main">الرئيسية (كاش)</option>
+                    <option value="insta">إنستا</option>
+                    <option value="wallet">المحفظة</option>
+                </select>
+            </div>
+            
+            <div class="btn-group">
+                <button class="cancel-btn" onclick="closeSaveEditModal()">رجوع</button>
+                <button class="confirm-btn" onclick="confirmFinalEdit()">حفظ التعديلات</button>
+            </div>
+        </div>
+    </div>
+<!-- نافذة تأكيد حفظ التعديلات الشاملة -->
+    <div class="modal-overlay" id="saveEditModalOverlay">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header" style="flex-direction: column; align-items: flex-start; gap: 5px;">
+                <span class="invoice-type-badge" style="color:var(--neon-border); font-weight:bold;">تعديل فاتورة شراء</span>
+                <h3>تأكيد حفظ فاتورة رقم: <span id="modalInvoiceIdText"></span></h3>
+            </div>
+            
+            <div class="compact-row"><label>إجمالي الفاتورة</label><input type="number" id="modalTotal" class="color-red-val" readonly></div>
+            <div class="compact-row"><label style="color:#00ff66;">المدفوع نقداً</label><input type="number" id="modalPaid" class="color-green-val" onclick="this.select()" oninput="calculateModalTotals()"></div>
+            <div class="compact-row"><label>المتبقي (آجل)</label><input type="number" id="modalRemaining" class="color-red-val" readonly dir="ltr"></div>
+            
+            <div class="compact-row" style="position:relative;">
+                <label>اسم المورد</label>
+                <div style="width: 170px; position:relative;">
+                    <input type="text" id="modalSupplier" style="width: 100%; box-sizing: border-box;" onclick="this.select()" oninput="handleEditSupplierInput()" placeholder="نقدي بدون اسم">
+                    <div id="editSupplierResults" class="dropdown-list"></div>
+                </div>
+            </div>
             <div id="editLiveSupplierBalance" style="text-align:left; font-size:14px; font-weight:bold; min-height: 20px; color:#0ea5e9; margin-bottom: 12px; padding-left:10px;"></div>
             
             <div class="compact-row">
@@ -312,7 +350,7 @@
             </div>
         </div>
     </div>
-
+    
     <div id="printReceiptArea"></div>
 
 <script src="db.js"></script>
