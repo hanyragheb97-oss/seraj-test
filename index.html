@@ -389,6 +389,25 @@
                 let key = localStorage.key(i);
                 dataObj[key] = localStorage.getItem(key);
             }
+
+            function changeSecurityPin() {
+    let settings = JSON.parse(localStorage.getItem('seraj_treasury_settings')) || { pin: '1234' };
+    
+    let oldPin = prompt("🔒 الأمان: برجاء إدخال الرقم السري الحالي أولاً:");
+    if (oldPin === null) return; 
+    
+    if (oldPin !== settings.pin) {
+        alert("❌ الرقم السري الحالي غير صحيح! لا يمكنك التعديل.");
+        return; 
+    }
+    
+    let newPin = prompt("✅ ممتاز! أدخل الرقم السري الجديد:");
+    if (newPin && newPin.trim() !== "") {
+        settings.pin = newPin.trim();
+        localStorage.setItem('seraj_treasury_settings', JSON.stringify(settings));
+        alert("تم تغيير الرقم السري بنجاح! 🔐");
+    }
+}
             
            // دالة استرجاع البيانات من الملف
         function restoreData(event) {
