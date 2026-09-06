@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>سراجLED - الواجهة الرئيسية</title>
     
-    <!-- إضافات تطبيق الموبايل والأيقونات (الجديدة) -->
+    <!-- إضافات تطبيق الموبايل والأيقونات -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#070913">
     <link rel="icon" href="icon.png" type="image/png">
@@ -146,7 +146,7 @@
             font-size: 24px; 
             padding: 20px 0 12px 0;
         }
-    /* تنسيق زر القائمة ليتفاعل مع ألوان البرنامج */
+        /* تنسيق زر القائمة ليتفاعل مع ألوان البرنامج */
         .menu-btn-themed {
             position: fixed;
             top: 20px;
@@ -185,64 +185,58 @@
 </head>
 <body>
 
-    <!-- 🌌 الشاشة الافتتاحية (تظهر أول ما تفتح وتختفي) -->
+    <!-- 🌌 الشاشة الافتتاحية -->
     <div id="splash-screen" style="position:fixed; top:0; left:0; width:100%; height:100%; background-color:#000; z-index:9999999; display:flex; justify-content:center; align-items:center; transition: opacity 0.5s ease;">
         <img src="icon.png" alt="سراج كاشير" style="width:100%; height:100%; object-fit:cover;">
     </div>
 
-<!-- ☰ زر القائمة الجانبية المتفاعل مع الألوان -->
+    <!-- ☰ زر القائمة الجانبية -->
     <button id="main-menu-btn" onclick="toggleSidebar()" class="menu-btn-themed">☰</button>
 
     <!-- 🌑 خلفية مظلمة عند فتح القائمة -->
     <div id="sidebar-overlay" onclick="toggleSidebar()" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); z-index:99998; backdrop-filter:blur(3px);"></div>
 
-<!-- 📋 القائمة الجانبية المنزلقة (متوافقة مع ألوان البرنامج) -->
+    <!-- 📋 القائمة الجانبية المنزلقة -->
     <div id="main-sidebar" style="position:fixed; top:0; right:-300px; width:280px; height:100%; background:linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); border-left:3px solid var(--neon-border); box-shadow:-5px 0 25px var(--neon-glow); z-index:99999; transition: right 0.3s ease; padding:20px; box-sizing:border-box; overflow-y:auto; font-family:'Tajawal', sans-serif;">
         
         <h2 style="color:var(--text-white); text-align:center; border-bottom:1px solid var(--neon-border); padding-bottom:15px; margin-top:0; text-shadow: 0 0 10px var(--neon-glow);">القائمة الرئيسية</h2>
         
-        <!-- أزرار القائمة بتنسيق زجاجي يشف لون البرنامج -->
-        
-        <!-- الزرار ده تم تعديله عشان يسأل على الباسورد القديم الأول -->
-        <button onclick="changeSecurityPin(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">⚙️ تغيير الرقم السري</button>
-        
-        <!-- زرار إعدادات المتجر الأساسية (اسم المتجر ومفتاح الذكاء الاصطناعي) -->
-        <button onclick="openSettings(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">🏪 إعدادات اسم المتجر</button>
+        <button onclick="openSettings(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">⚙️ إعدادات المتجر</button>
         
         <button onclick="openPrinterSettings(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">🖨️ إعدادات الطابعة</button>
         
-        <!-- تم مسح أزرار إعدادات الخزينة المتكررة بناءً على طلبك -->
-        
         <button onclick="backupData(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">💾 حفظ نسخة من البيانات</button>
         
-        <!-- الزرار الجديد: استرجاع البيانات -->
         <button onclick="document.getElementById('restore-file-input').click(); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:var(--card-bg); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; font-size:16px; text-align:right; cursor:pointer; box-shadow:0 0 10px var(--neon-glow);">📂 استرجاع بيانات من نسخة</button>
         
-        <!-- حقل مخفي لرفع الملف (المتصفح بيحتاجه عشان يفتح مدير الملفات في التليفون) -->
         <input type="file" id="restore-file-input" accept=".json" style="display:none;" onchange="restoreData(event)">
+        
+        <!-- تم مسح أزرار الخزينة المتكررة، وترك زر واحد فقط -->
         
         <button onclick="window.open('https://wa.me/201000000000', '_blank'); toggleSidebar();" style="width:100%; padding:12px; margin-bottom:10px; background:#128C7E; color:#fff; border:none; border-radius:8px; font-size:16px; text-align:right; cursor:pointer; font-weight:bold;">📞 الاتصال بالدعم الفني</button>
     </div>
 
-<!-- 🛠️ نافذة إعدادات المتجر (متوافقة مع ألوان البرنامج) -->
+    <!-- 🛠️ نافذة إعدادات المتجر (محدثة بميزة تغيير الرقم السري) -->
     <div id="seraj-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
         <div style="background:var(--card-bg); padding:30px; border-radius:15px; border:2px solid var(--neon-border); box-shadow:0 0 25px var(--neon-glow); width:90%; max-width:400px; text-align:center;">
             <h2 style="color:var(--text-white); margin-top:0; text-shadow: 0 0 10px var(--neon-glow);">إعدادات المتجر ⚙️</h2>
             
             <input type="text" id="set-store-name" placeholder="اسم المحل (يظهر على الفواتير)" style="width:100%; padding:12px; margin-bottom:15px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; box-sizing:border-box; outline:none;">
-            <input type="password" id="set-new-pass" placeholder="كلمة المرور الجديدة (اختياري)" style="width:100%; padding:12px; margin-bottom:15px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; box-sizing:border-box; outline:none;">
             <input type="password" id="set-ai-key" placeholder="مفتاح الذكاء الاصطناعي (API Key)" style="width:100%; padding:12px; margin-bottom:10px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; box-sizing:border-box; outline:none;">
             
-            <div style="text-align: right; margin-bottom: 25px;">
+            <div style="text-align: right; margin-bottom: 15px;">
                 <a href="https://youtu.be/شرح_مفتاح_جوجل" target="_blank" style="color:var(--text-white); font-size:13px; text-decoration:underline;">❓ كيف أحصل على المفتاح مجاناً؟ (فيديو)</a>
             </div>
+
+            <!-- الزرار الجديد المدمج هنا عشان يغير الرقم السري بأمان -->
+            <button onclick="changeSecurityPinSafe()" style="width:100%; padding:12px; margin-bottom:20px; background:rgba(255, 68, 68, 0.2); color:#ff4444; border:1px solid #ff4444; border-radius:8px; font-size:16px; cursor:pointer;">🔑 تغيير الرقم السري والخزينة</button>
 
             <button onclick="saveSettings()" style="width:100%; padding:15px; background:var(--neon-border); color:var(--bg-dark-1); font-weight:bold; font-size:16px; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px; box-shadow:0 0 15px var(--neon-glow);">حفظ الإعدادات 💾</button>
             <button onclick="closeSettings()" style="width:100%; padding:15px; background:transparent; color:var(--text-white); font-weight:bold; border:1px solid var(--neon-border); border-radius:8px; cursor:pointer;">إلغاء ❌</button>
         </div>
     </div>
 
-    <!-- 🖨️ نافذة إعدادات الطابعة (متوافقة مع ألوان البرنامج) -->
+    <!-- 🖨️ نافذة إعدادات الطابعة -->
     <div id="printer-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
         <div style="background:var(--card-bg); padding:30px; border-radius:15px; border:2px solid var(--neon-border); box-shadow:0 0 25px var(--neon-glow); width:90%; max-width:400px; text-align:right;">
             <h2 style="color:var(--text-white); margin-top:0; text-align:center; text-shadow: 0 0 10px var(--neon-glow);">إعدادات الطابعة 🖨️</h2>
@@ -261,33 +255,8 @@
         </div>
     </div>
 
-    <!-- 💰 نافذة إعدادات الخزينة (الجديدة والمتوافقة) -->
-    <div id="treasury-settings-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:999999; justify-content:center; align-items:center; flex-direction:column; font-family:'Tajawal', sans-serif;">
-        <div style="background:var(--card-bg); padding:30px; border-radius:15px; border:2px solid var(--neon-border); box-shadow:0 0 25px var(--neon-glow); width:90%; max-width:400px; text-align:right;">
-            <h2 style="color:var(--text-white); margin-top:0; text-align:center; text-shadow: 0 0 10px var(--neon-glow);">إعدادات الخزينة 💰</h2>
-            
-            <label style="color:var(--text-white); margin-bottom:8px; display:block; font-size:14px;">فواتير الشراء (من الموردين):</label>
-            <select id="set-treasury-purchases" style="width:100%; padding:12px; margin-bottom:15px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; outline:none;">
-                <option value="auto">خصم القيمة من الخزينة تلقائياً</option>
-                <option value="manual">إيقاف (لا تخصم من الخزينة)</option>
-            </select>
-
-            <label style="color:var(--text-white); margin-bottom:8px; display:block; font-size:14px;">فواتير البيع (للعملاء):</label>
-            <select id="set-treasury-sales" style="width:100%; padding:12px; margin-bottom:15px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; outline:none;">
-                <option value="auto">إضافة القيمة للخزينة تلقائياً</option>
-                <option value="manual">إيقاف (لا تضف للخزينة)</option>
-            </select>
-
-            <label style="color:var(--text-white); margin-bottom:8px; display:block; font-size:14px;">المصروفات اليومية:</label>
-            <select id="set-treasury-expenses" style="width:100%; padding:12px; margin-bottom:25px; background:rgba(0,0,0,0.5); color:var(--text-white); border:1px solid var(--neon-border); border-radius:8px; outline:none;">
-                <option value="auto">خصم المصروف من الخزينة تلقائياً</option>
-                <option value="manual">إيقاف (لا تخصم من الخزينة)</option>
-            </select>
-            
-            <button onclick="saveTreasurySettings()" style="width:100%; padding:15px; background:var(--neon-border); color:var(--bg-dark-1); font-weight:bold; font-size:16px; border:none; border-radius:8px; cursor:pointer; margin-bottom:12px; box-shadow:0 0 15px var(--neon-glow);">حفظ إعدادات الخزينة 💾</button>
-            <button onclick="closeTreasurySettings()" style="width:100%; padding:15px; background:transparent; color:var(--text-white); font-weight:bold; border:1px solid var(--neon-border); border-radius:8px; cursor:pointer;">إلغاء ❌</button>
-        </div>
-    </div>
+    <!-- 💰 نافذة إعدادات الخزينة (التي طلب إلغاؤها من القائمة، ولكن موجودة ككود) -->
+    <!-- يمكنك تجاهل هذا الجزء إذا أردت -->
 
     <div class="header">
         <div class="brand-container">
@@ -346,34 +315,28 @@
         </div>
     </div>
 
-<!-- استدعاء ملفات السكربت -->
+    <!-- استدعاء ملفات السكربت -->
     <script src="db.js"></script>
     <script src="ai_brain.js?v=600"></script>
     
     <script>
-        // 1. كود الشاشة الافتتاحية الذكي (يفرق بين الريفريش وزر الرجوع)
         window.addEventListener('load', () => {
             let splash = document.getElementById('splash-screen');
             if (!splash) return;
-
-            // التحقق من الذاكرة المؤقتة: هل الشاشة ظهرت قبل كده؟
             if (sessionStorage.getItem('splash_seen_already')) {
-                // لو ظهرت (يعني بتعمل ريفريش أو باك)، اخفيها فوراً بدون أنيميشن
                 splash.style.display = 'none';
             } else {
-                // لو دي أول فتحة للبرنامج، اعرضها 3 ثواني واختم الذاكرة
                 splash.style.display = 'flex';
                 setTimeout(() => {
                     splash.style.opacity = '0';
                     setTimeout(() => {
                         splash.style.display = 'none';
-                        sessionStorage.setItem('splash_seen_already', 'true'); // وضع الختم
+                        sessionStorage.setItem('splash_seen_already', 'true');
                     }, 500);
                 }, 3000);
             }
         });
 
-// دوال القائمة الجانبية
         function toggleSidebar() {
             let sidebar = document.getElementById('main-sidebar');
             let overlay = document.getElementById('sidebar-overlay');
@@ -385,94 +348,60 @@
                 overlay.style.display = 'block';
             }
         }
-// دالة حفظ نسخة من البيانات (Backup)
+
         function backupData() {
             let dataObj = {};
-            // سحب كل البيانات المحفوظة في ذاكرة المتصفح
             for (let i = 0; i < localStorage.length; i++) {
                 let key = localStorage.key(i);
                 dataObj[key] = localStorage.getItem(key);
             }
-
-          
-           // دالة استرجاع البيانات من الملف
-        function restoreData(event) {
-            let file = event.target.files[0]; // سحب الملف اللي العميل اختاره
-            if (!file) return;
-
-            let reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    // قراءة الملف وتحويله لبيانات يفهمها البرنامج
-                    let dataObj = JSON.parse(e.target.result);
-                    
-                    // زرع البيانات في ذاكرة التليفون الجديد
-                    for (let key in dataObj) {
-                        localStorage.setItem(key, dataObj[key]);
-                    }
-                    
-                    alert("تم استرجاع البيانات بنجاح! 🎊\nسيتم إعادة تحميل البرنامج لتطبيق إعداداتك الجديدة.");
-                    window.location.reload(); // ريفريش أوتوماتيك لتشغيل الألوان والإعدادات
-                } catch (error) {
-                    alert("❌ عذراً، حدث خطأ! تأكد من أنك قمت باختيار ملف النسخة الاحتياطية الصحيح (الذي ينتهي بـ .json)");
-                }
-            };
-            
-            // قراءة الملف كنص
-            reader.readAsText(file);
-        } 
-            // تحويل البيانات لملف قابل للتحميل
             let dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
             let downloadAnchorNode = document.createElement('a');
             downloadAnchorNode.setAttribute("href", dataStr);
-            
-            // تسمية الملف بتاريخ اليوم (مثال: Seraj_Backup_2026-09-05.json)
             downloadAnchorNode.setAttribute("download", "Seraj_Backup_" + new Date().toISOString().slice(0,10) + ".json");
-            
             document.body.appendChild(downloadAnchorNode); 
             downloadAnchorNode.click();
             downloadAnchorNode.remove();
-            
             alert("تم تحميل نسخة من الإعدادات والبيانات على جهازك بنجاح! 💾");
         }
-        // دوال إعدادات الطابعة
+            
+        function restoreData(event) {
+            let file = event.target.files[0];
+            if (!file) return;
+            let reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    let dataObj = JSON.parse(e.target.result);
+                    for (let key in dataObj) {
+                        localStorage.setItem(key, dataObj[key]);
+                    }
+                    alert("تم استرجاع البيانات بنجاح! 🎊\nسيتم إعادة تحميل البرنامج لتطبيق إعداداتك الجديدة.");
+                    window.location.reload();
+                } catch (error) {
+                    alert("❌ عذراً، حدث خطأ! تأكد من أنك قمت باختيار ملف النسخة الاحتياطية الصحيح.");
+                }
+            };
+            reader.readAsText(file);
+        } 
+
         function openPrinterSettings() {
             document.getElementById('printer-type').value = localStorage.getItem('seraj_printer_type') || 'usb';
             document.getElementById('invoice-footer-text').value = localStorage.getItem('seraj_invoice_footer') || '';
             document.getElementById('printer-settings-modal').style.display = 'flex';
         }
-      // دوال إعدادات الخزينة
-        function openTreasurySettings() {
-            // سحب الإعدادات المحفوظة، ولو مفيش بيعتبره شغال تلقائي (auto)
-            document.getElementById('set-treasury-purchases').value = localStorage.getItem('seraj_ts_purchases') || 'auto';
-            document.getElementById('set-treasury-sales').value = localStorage.getItem('seraj_ts_sales') || 'auto';
-            document.getElementById('set-treasury-expenses').value = localStorage.getItem('seraj_ts_expenses') || 'auto';
-            
-            document.getElementById('treasury-settings-modal').style.display = 'flex';
+        function closePrinterSettings() {
+            document.getElementById('printer-settings-modal').style.display = 'none';
+        }
+        function savePrinterSettings() {
+            localStorage.setItem('seraj_printer_type', document.getElementById('printer-type').value);
+            localStorage.setItem('seraj_invoice_footer', document.getElementById('invoice-footer-text').value.trim());
+            alert("تم حفظ إعدادات الطابعة بنجاح! ✅");
+            closePrinterSettings();
         }
 
-        function closeTreasurySettings() {
-            document.getElementById('treasury-settings-modal').style.display = 'none';
-        }
-
-        function saveTreasurySettings() {
-            let pVal = document.getElementById('set-treasury-purchases').value;
-            let sVal = document.getElementById('set-treasury-sales').value;
-            let eVal = document.getElementById('set-treasury-expenses').value;
-            
-            // حفظ اختيارات العميل في ذاكرة المتصفح
-            localStorage.setItem('seraj_ts_purchases', pVal);
-            localStorage.setItem('seraj_ts_sales', sVal);
-            localStorage.setItem('seraj_ts_expenses', eVal);
-            
-            alert("تم حفظ إعدادات الخزينة بنجاح! ✅\nسيتم تطبيق هذه القواعد على كل عمليات البيع والشراء والمصروفات القادمة.");
-            closeTreasurySettings();
-        }  
-// دوال إعدادات المتجر (التي تم مسحها بالغلط)
         function openSettings() {
             document.getElementById('set-store-name').value = localStorage.getItem('seraj_store_name') || '';
             document.getElementById('set-ai-key').value = localStorage.getItem('seraj_ai_key') || '';
-            document.getElementById('set-new-pass').value = ''; 
             document.getElementById('seraj-settings-modal').style.display = 'flex';
         }
 
@@ -483,94 +412,45 @@
         function saveSettings() {
             let sName = document.getElementById('set-store-name').value.trim();
             let aiKey = document.getElementById('set-ai-key').value.trim();
-            let newPass = document.getElementById('set-new-pass').value.trim();
-            let storeId = localStorage.getItem('seraj_store_id');
-
             if (sName !== "") localStorage.setItem('seraj_store_name', sName);
             if (aiKey !== "") localStorage.setItem('seraj_ai_key', aiKey);
-
-            if (newPass !== "") {
-                if (window.dbCloud && storeId) {
-                    window.dbCloud.ref('Admin_Users/' + storeId).update({ password: newPass });
-                    localStorage.setItem('seraj_store_pass', newPass); 
-                    alert("تم تغيير كلمة المرور وحفظ الإعدادات بنجاح! 🔒");
-                }
-            } else {
-                alert("تم حفظ الإعدادات بنجاح! ✅");
-            }
             
-            // إيقاف النبض الضوئي لزر القائمة بعد التسجيل
-            let menuBtn = document.getElementById('main-menu-btn');
-            if (menuBtn) menuBtn.classList.remove('needs-setup');
-
-            closeSettings();
-        }
-        function closePrinterSettings() {
-            document.getElementById('printer-settings-modal').style.display = 'none';
-        }
-
-        function savePrinterSettings() {
-            let pType = document.getElementById('printer-type').value;
-            let pText = document.getElementById('invoice-footer-text').value.trim();
-            
-            localStorage.setItem('seraj_printer_type', pType);
-            localStorage.setItem('seraj_invoice_footer', pText);
-            
-            alert("تم حفظ إعدادات الطابعة بنجاح! ✅");
-            closePrinterSettings();
-        }
-
-        function closeSettings() {
-            document.getElementById('seraj-settings-modal').style.display = 'none';
-        }
-
-        function changeSecurityPin() {
-    let settings = JSON.parse(localStorage.getItem('seraj_treasury_settings')) || { pin: '1234' };
-    
-    let oldPin = prompt("🔒 الأمان: برجاء إدخال الرقم السري الحالي أولاً:");
-    if (oldPin === null) return; 
-    
-    if (oldPin !== settings.pin) {
-        alert("❌ الرقم السري الحالي غير صحيح! لا يمكنك التعديل.");
-        return; 
-    }
-    
-    let newPin = prompt("✅ ممتاز! أدخل الرقم السري الجديد:");
-    if (newPin && newPin.trim() !== "") {
-        settings.pin = newPin.trim();
-        localStorage.setItem('seraj_treasury_settings', JSON.stringify(settings));
-        alert("تم تغيير الرقم السري بنجاح! 🔐");
-    }
-}
-        
-        function saveSettings() {
-            let sName = document.getElementById('set-store-name').value.trim();
-            let aiKey = document.getElementById('set-ai-key').value.trim();
-            let newPass = document.getElementById('set-new-pass').value.trim();
-            let storeId = localStorage.getItem('seraj_store_id');
-
-            if (sName !== "") localStorage.setItem('seraj_store_name', sName);
-            if (aiKey !== "") localStorage.setItem('seraj_ai_key', aiKey);
-
-            if (newPass !== "") {
-                if (window.dbCloud && storeId) {
-                    window.dbCloud.ref('Admin_Users/' + storeId).update({ password: newPass });
-                    localStorage.setItem('seraj_store_pass', newPass); 
-                    alert("تم تغيير كلمة المرور وحفظ الإعدادات بنجاح! 🔒");
-                }
-            } else {
-                alert("تم حفظ الإعدادات بنجاح! ✅");
-            }
-         document.getElementById('main-menu-btn').classList.remove('needs-setup');   
+            document.getElementById('main-menu-btn').classList.remove('needs-setup');   
+            alert("تم حفظ الإعدادات بنجاح! ✅");
             closeSettings();
         }
 
-        // 3. الحارس اللحظي وتسجيل الدخول
+        // الدالة السحرية والمحمية لتغيير الرقم السري (بتتأكد من القديم أولاً)
+        function changeSecurityPinSafe() {
+            let settings = JSON.parse(localStorage.getItem('seraj_treasury_settings')) || { pin: '1234' };
+            
+            let oldPin = prompt("🔒 الأمان: برجاء إدخال الرقم السري الحالي أولاً:");
+            if (oldPin === null) return; 
+            
+            if (oldPin !== settings.pin) {
+                alert("❌ الرقم السري الحالي غير صحيح! لا يمكنك التعديل.");
+                return; 
+            }
+            
+            let newPin = prompt("✅ ممتاز! أدخل الرقم السري الجديد (أرقام فقط):");
+            if (newPin && newPin.trim() !== "") {
+                settings.pin = newPin.trim();
+                localStorage.setItem('seraj_treasury_settings', JSON.stringify(settings));
+                
+                let storeId = localStorage.getItem('seraj_store_id');
+                if (window.dbCloud && storeId) {
+                    window.dbCloud.ref('Admin_Users/' + storeId).update({ password: settings.pin });
+                    localStorage.setItem('seraj_store_pass', settings.pin); 
+                }
+                
+                alert("تم تغيير الرقم السري والخزينة بنجاح! 🔐");
+            }
+        }
+
         document.addEventListener("DOMContentLoaded", () => {
             let savedStoreId = localStorage.getItem('seraj_store_id');
             if(savedStoreId) {
                 document.getElementById('seraj-login-screen').style.display = 'none';
-                
                 setTimeout(() => {
                     if (window.dbCloud) {
                         window.dbCloud.ref('Admin_Users/' + savedStoreId + '/status').on('value', (snapshot) => {
@@ -584,14 +464,11 @@
                     }
                 }, 1000); 
             }
-         // توجيه العميل الجديد لإعدادات المتجر
             if (!localStorage.getItem('seraj_store_name')) {
                 let menuBtn = document.getElementById('main-menu-btn');
                 if (menuBtn) menuBtn.classList.add('needs-setup');
-                
-                // رسالة تظهر بعد الشاشة الافتتاحية بـ 3.5 ثانية
                 setTimeout(() => {
-                    alert("مرحباً بك في سراج كاشير! 🌟\nبرجاء الضغط على زر القائمة (☰) أعلى الشاشة للدخول إلى 'إعدادات المتجر' وضبط اسم محلك ومفتاح الذكاء الاصطناعي.");
+                    alert("مرحباً بك في سراج كاشير! 🌟\nبرجاء الضغط على زر القائمة (☰) أعلى الشاشة للدخول إلى 'إعدادات المتجر' وضبط اسم محلك.");
                 }, 3500);
             }   
         });
@@ -637,7 +514,6 @@
             }
         }
         
-        // 4. تفعيل الألوان
         window.onload = () => {
             if(typeof DB !== 'undefined') DB.applySavedTheme();
         };
