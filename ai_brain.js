@@ -363,7 +363,7 @@ async function sendMessage() {
         }
 
 // 1. استدعاء المفتاح من الذاكرة في نفس لحظة الإرسال
-        let savedKey = localStorage.getItem('seraj_ai_key');
+   let savedKey = localStorage.getItem('ai_api_key') || localStorage.getItem('seraj_ai_key');
 
         // 2. إيقاف الإرسال وتنبيه المستخدم إذا كان المفتاح غير موجود
         if (!savedKey || savedKey.trim() === "") {
