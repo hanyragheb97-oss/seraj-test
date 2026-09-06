@@ -166,11 +166,13 @@
     </div>
 
     <!-- 📊 جدول عرض العملاء والتحكم فيهم -->
+<!-- 📊 جدول عرض العملاء والتحكم فيهم -->
     <table>
         <thead>
             <tr>
                 <th>كود المحل</th>
                 <th>اسم العميل</th>
+                <th>كلمة المرور</th>
                 <th>الباقة</th>
                 <th>الأجهزة المسموحة</th>
                 <th>تاريخ الانتهاء</th>
@@ -184,21 +186,13 @@
     </table>
 
     <script>
-        // ⚠️ مهم: ضع أكواد الفايربيس الخاصة بك هنا! ⚠️
-        const firebaseConfig = {
-    apiKey: "AIzaSyASQurlODfgqRi812wwzcSGOTetYTaeUfQ",
-    authDomain: "serajled.firebaseapp.com",
-    databaseURL: "https://serajled-default-rtdb.firebaseio.com",
-    projectId: "serajled",
-    storageBucket: "serajled.firebasestorage.app",
-    messagingSenderId: "586272473412",
-    appId: "1:586272473412:web:a31487a74d9ea4ea96d711",
-    measurementId: "G-6Q7K2H0XJJ"
-};
+        // ⚠️ تأكد من وجود أكواد الفايربيس الخاصة بك هنا (ماتمسحهاش) ⚠️
+        // ... (كود الـ firebaseConfig بتاعك يفضل موجود هنا) ...
+        
         firebase.initializeApp(firebaseConfig);
         const dbAdmin = firebase.database();
 
-        // حماية بسيطة للوحة التحكم (الباسوورد الافتراضي: Hany2026)
+        // حماية بسيطة للوحة التحكم
         function checkAdmin() {
             if(document.getElementById('admin-pass').value === 'Hany2026') {
                 document.getElementById('login-shield').style.display = 'none';
@@ -208,7 +202,7 @@
             }
         }
 
-        // إنشاء عميل جديد
+        // إنشاء عميل جديد (بيسمع فعلياً في الفايربيس)
         function createNewClient() {
             let id = document.getElementById('new-store-id').value.trim();
             let pass = document.getElementById('new-store-pass').value.trim();
@@ -224,22 +218,23 @@
                 password: pass,
                 plan: plan,
                 max_devices: devices,
-                expiry_date: expiry || "2030-12-31", // لو مدخلش تاريخ، خليه بعيد
+                expiry_date: expiry || "2030-12-31",
                 status: "active",
                 created_at: new Date().toISOString()
             };
 
+            // الرفع الفعلي لقاعدة البيانات
             dbAdmin.ref('Admin_Users/' + id).set(clientData).then(() => {
                 alert("تم إضافة العميل بنجاح! ✅");
                 document.getElementById('new-store-id').value = "";
                 document.getElementById('new-store-pass').value = "";
                 document.getElementById('new-store-name').value = "";
-                loadClients(); // تحديث الجدول
             });
         }
 
-        // تحميل قائمة العملاء من السحابة
+        // تحميل العملاء من السحابة (Real-time listener)
         function loadClients() {
+            // استخدام 'on' بيخلي اللوحة تتحدث فوراً لو حصل أي تغيير في قاعدة البيانات
             dbAdmin.ref('Admin_Users').on('value', (snapshot) => {
                 let tbody = document.getElementById('clients-table-body');
                 tbody.innerHTML = '';
@@ -250,16 +245,26 @@
                         let user = users[storeId];
                         let statusClass = user.status === 'active' ? 'status-active' : 'status-suspended';
                         let statusText = user.status === 'active' ? 'نشط' : 'موقوف';
+                        
+                        // زرار الإيقاف/التفعيل
                         let btnAction = user.status === 'active' 
-                            ? `<button class="btn-suspend" onclick="toggleStatus('${storeId}', 'suspended')">إيقاف ⏸️</button>`
-                            : `<button class="btn-add" onclick="toggleStatus('${storeId}', 'active')">تفعيل ▶️</button>`;
+                            ? `<button class="btn-suspend" onclick="updateField('${storeId}', 'status', 'suspended')">إيقاف ⏸️</button>`
+                            : `<button class="btn-add" onclick="updateField('${storeId}', 'status', 'active')">تفعيل ▶️</button>`;
 
                         let tr = document.createElement('tr');
                         tr.innerHTML = `
                             <td><strong>${storeId}</strong></td>
-                            <td>${user.store_name || '-'}</td>
                             <td>
-                                <select onchange="updatePlan('${storeId}', this.value)" style="width:auto; padding:5px;">
+                                <input type="text" value="${user.store_name || ''}" style="width:120px; padding:5px; text-align:center;" 
+                                onchange="updateField('${storeId}', 'store_name', this.value)">
+                            </td>
+                            <td>
+                                <!-- حقل كلمة المرور (قابل للتعديل) -->
+                                <input type="text" value="${user.password || ''}" style="width:100px; padding:5px; text-align:center;" 
+                                onchange="updateField('${storeId}', 'password', this.value)">
+                            </td>
+                            <td>
+                                <select onchange="updateField('${storeId}', 'plan', this.value)" style="width:auto; padding:5px;">
                                     <option value="free" ${user.plan==='free'?'selected':''}>مجانية</option>
                                     <option value="pro" ${user.plan==='pro'?'selected':''}>محترف</option>
                                     <option value="vip" ${user.plan==='vip'?'selected':''}>VIP</option>
@@ -267,11 +272,11 @@
                             </td>
                             <td>
                                 <input type="number" value="${user.max_devices}" style="width:60px; padding:5px; text-align:center;" 
-                                onchange="updateDevices('${storeId}', this.value)">
+                                onchange="updateField('${storeId}', 'max_devices', parseInt(this.value))">
                             </td>
                             <td>
                                 <input type="date" value="${user.expiry_date}" style="padding:5px;" 
-                                onchange="updateExpiry('${storeId}', this.value)">
+                                onchange="updateField('${storeId}', 'expiry_date', this.value)">
                             </td>
                             <td><span class="status-badge ${statusClass}">${statusText}</span></td>
                             <td style="display:flex; gap:10px;">
@@ -285,30 +290,23 @@
             });
         }
 
-        // إيقاف أو تفعيل عميل
-        function toggleStatus(storeId, newStatus) {
-            dbAdmin.ref('Admin_Users/' + storeId).update({ status: newStatus });
+        // 🌟 الدالة السحرية: دي اللي بتعمل التحديث الفعلي في الفايربيس لأي حقل 🌟
+        function updateField(storeId, fieldName, newValue) {
+            let updateObj = {};
+            updateObj[fieldName] = newValue;
+            dbAdmin.ref('Admin_Users/' + storeId).update(updateObj).then(() => {
+                console.log(`تم تحديث ${fieldName} للعميل ${storeId} بنجاح في قاعدة البيانات.`);
+            }).catch((error) => {
+                alert("حدث خطأ أثناء التحديث: " + error.message);
+            });
         }
 
-        // تحديث الباقة
-        function updatePlan(storeId, newPlan) {
-            dbAdmin.ref('Admin_Users/' + storeId).update({ plan: newPlan });
-        }
-
-        // تحديث عدد الأجهزة المسموحة
-        function updateDevices(storeId, count) {
-            dbAdmin.ref('Admin_Users/' + storeId).update({ max_devices: parseInt(count) });
-        }
-
-        // تحديث تاريخ الانتهاء
-        function updateExpiry(storeId, date) {
-            dbAdmin.ref('Admin_Users/' + storeId).update({ expiry_date: date });
-        }
-
-        // مسح عميل نهائياً (من الحسابات بس، مش فواتيره اللي في test_Stores)
+        // الحذف الفعلي للعميل من قاعدة البيانات
         function deleteClient(storeId) {
-            if(confirm(`⚠️ تحذير خطير: هل أنت متأكد من حذف العميل "${storeId}" نهائياً؟ لن يتمكن من الدخول للبرنامج.`)) {
-                dbAdmin.ref('Admin_Users/' + storeId).remove();
+            if(confirm(`⚠️ تحذير خطير: هل أنت متأكد من حذف حساب العميل "${storeId}" نهائياً؟ هذا الإجراء لا يمكن التراجع عنه.`)) {
+                dbAdmin.ref('Admin_Users/' + storeId).remove().then(() => {
+                    alert("تم حذف العميل نهائياً من قاعدة البيانات.");
+                });
             }
         }
     </script>
