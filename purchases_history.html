@@ -501,18 +501,23 @@
         return idStr;
     }
 
-    function getFilteredInvoices() {
+ function getFilteredInvoices() {
         const searchQuery = document.getElementById('historySearchInput').value.toLowerCase();
         const searchTypeRadio = document.querySelector('input[name="searchType"]:checked');
         const searchType = searchTypeRadio ? searchTypeRadio.value : 'supplier';
         
+        // الترتيب الصارم بالوقت والثانية (الأحدث في الأحدث فوق دائماً)
         let sortedInvoices = [...purchaseInvoicesDB].sort((a, b) => {
-            let dateA = new Date(a.date || 0).getTime();
-            let dateB = new Date(b.date || 0).getTime();
-            if (dateB !== dateA) return dateB - dateA;
-            let timeA = a.timestamp || 0;
-            let timeB = b.timestamp || 0;
-            if (timeB !== timeA) return timeB - timeA;
+            // اعتماد كامل على الـ timestamp (الوقت بالمللي ثانية/الثانية)
+            let timeA = a.timestamp || new Date(a.date || 0).getTime();
+            let timeB = b.timestamp || new Date(b.date || 0).getTime();
+            
+            // لو الفاتورة اتعدلت، بنخليها تاخد وقت التعديل أو نعتمد على الـ ID الزمني كاحتياطي دقيق
+            if (timeB !== timeA) {
+                return timeB - timeA; // الأكبر (الأحدث) ييجي فوق
+            }
+            
+            // لو الزمن تطابق بالمللي ثانية، الأحدث في الرقم (الأكبر) ييجي فوق
             return (b.id || 0) - (a.id || 0);
         });
 
@@ -1116,7 +1121,7 @@ function saveEditItem() {
         }
     }
 
-    function confirmFinalEdit() {
+function confirmFinalEdit() {
         let dbIndex = purchaseInvoicesDB.findIndex(i => i.id === editingInvoiceData.id);
         if(dbIndex === -1) return;
 
@@ -1218,6 +1223,7 @@ function saveEditItem() {
             vault: finalVault,
             items: editingInvoiceData.items,
             notes: oldInv.notes,
+            timestamp: Date.now(), // <-- حطيتها هنا عشان الفاتورة تطير لفوق وتتحدث بالثانية لحظة الحفظ
             _device: oldInv._device || null,
             _lastModifiedBy: localStorage.getItem('seraj_device_name') || 'غير معروف'
         };
