@@ -1015,8 +1015,8 @@
         }
     }
 
-    function saveEditItem() {
-        let indexVal = document.getElementById('editItemIndex').value;
+function saveEditItem() {
+        let indexVal = String(document.getElementById('editItemIndex').value).trim();
         let newPPrice = parseFloat(document.getElementById('editItemPrice').value) || 0;
         let newSPrice = parseFloat(document.getElementById('editItemSellPrice').value) || 0;
         let newQty = parseFloat(document.getElementById('editItemQty').value) || 1;
@@ -1027,27 +1027,53 @@
         }
 
         if (indexVal.startsWith('new_')) {
-            let prodId = parseInt(indexVal.split('_')[1]);
-            let p = productsDB.find(x => x.id === prodId);
+            // التعديل السحري: استخراج الـ ID كنص للبحث الدقيق
+            let prodId = indexVal.replace('new_', '');
+            
+            // البحث عن الصنف في المخزن
+            let p = productsDB.find(x => String(x.id) === String(prodId));
+            
             if(p) {
-                const existing = editingInvoiceData.items.findIndex(i => i.id === p.id);
+                // التأكد إذا كان الصنف مضافاً مسبقاً داخل الفاتورة المفتوحة للتعديل
+                const existing = editingInvoiceData.items.findIndex(i => String(i.id) === String(p.id));
+                
                 if(existing > -1) {
+                    // لو موجود، زود الكمية وحدث السعر
                     editingInvoiceData.items[existing].qty += newQty;
                     editingInvoiceData.items[existing].purchasePrice = newPPrice;
                     editingInvoiceData.items[existing].price = newSPrice;
+                    editingInvoiceData.items[existing].total = newPPrice * editingInvoiceData.items[existing].qty;
                 } else {
-                    editingInvoiceData.items.push({...p, purchasePrice: newPPrice, price: newSPrice, qty: newQty, total: newPPrice * newQty});
+                    // لو جديد، ضيفه كسطر جديد من فوق
+                    editingInvoiceData.items.unshift({
+                        ...p, 
+                        purchasePrice: newPPrice, 
+                        price: newSPrice, 
+                        qty: newQty, 
+                        total: newPPrice * newQty
+                    });
                 }
+            } else {
+                alert("حدث خطأ: لم يتم العثور على بيانات هذا الصنف في المخزن.");
+                return;
             }
         } else {
+            // التعديل على صنف موجود فعلاً من الأول في الفاتورة
             let idx = parseInt(indexVal);
-            editingInvoiceData.items[idx].purchasePrice = newPPrice;
-            editingInvoiceData.items[idx].price = newSPrice;
-            editingInvoiceData.items[idx].qty = newQty;
+            if (!isNaN(idx) && editingInvoiceData.items[idx]) {
+                editingInvoiceData.items[idx].purchasePrice = newPPrice;
+                editingInvoiceData.items[idx].price = newSPrice;
+                editingInvoiceData.items[idx].qty = newQty;
+                editingInvoiceData.items[idx].total = newPPrice * newQty;
+            }
         }
         
         document.getElementById('editItemModal').style.display = 'none';
-        renderEditTable();
+        renderEditTable(); // إعادة رسم جدول التعديل فوراً
+        
+        // رجع المؤشر للبحث عشان لو عاوز يضيف أصناف تانية بسرعة
+        let searchInput = document.getElementById('editProductSearch');
+        if(searchInput) searchInput.focus();
     }
 
     function openSaveEditModal() {
