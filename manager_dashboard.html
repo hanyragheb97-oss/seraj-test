@@ -171,6 +171,7 @@
             <tr>
                 <th>كود المحل</th>
                 <th>اسم العميل</th>
+                <th>كلمة المرور</th> <!-- تم الإضافة هنا -->
                 <th>الباقة</th>
                 <th>الأجهزة المسموحة</th>
                 <th>تاريخ الانتهاء</th>
@@ -186,15 +187,15 @@
     <script>
         // ⚠️ مهم: ضع أكواد الفايربيس الخاصة بك هنا! ⚠️
         const firebaseConfig = {
-    apiKey: "AIzaSyASQurlODfgqRi812wwzcSGOTetYTaeUfQ",
-    authDomain: "serajled.firebaseapp.com",
-    databaseURL: "https://serajled-default-rtdb.firebaseio.com",
-    projectId: "serajled",
-    storageBucket: "serajled.firebasestorage.app",
-    messagingSenderId: "586272473412",
-    appId: "1:586272473412:web:a31487a74d9ea4ea96d711",
-    measurementId: "G-6Q7K2H0XJJ"
-};
+            apiKey: "AIzaSyASQurlODfgqRi812wwzcSGOTetYTaeUfQ",
+            authDomain: "serajled.firebaseapp.com",
+            databaseURL: "https://serajled-default-rtdb.firebaseio.com",
+            projectId: "serajled",
+            storageBucket: "serajled.firebasestorage.app",
+            messagingSenderId: "586272473412",
+            appId: "1:586272473412:web:a31487a74d9ea4ea96d711",
+            measurementId: "G-6Q7K2H0XJJ"
+        };
         firebase.initializeApp(firebaseConfig);
         const dbAdmin = firebase.database();
 
@@ -259,6 +260,11 @@
                             <td><strong>${storeId}</strong></td>
                             <td>${user.store_name || '-'}</td>
                             <td>
+                                <!-- حقل كلمة المرور (قابل للتعديل) تم الإضافة هنا -->
+                                <input type="text" value="${user.password || ''}" style="width:100px; padding:5px; text-align:center;" 
+                                onchange="updatePassword('${storeId}', this.value)">
+                            </td>
+                            <td>
                                 <select onchange="updatePlan('${storeId}', this.value)" style="width:auto; padding:5px;">
                                     <option value="free" ${user.plan==='free'?'selected':''}>مجانية</option>
                                     <option value="pro" ${user.plan==='pro'?'selected':''}>محترف</option>
@@ -283,6 +289,11 @@
                     }
                 }
             });
+        }
+
+        // تحديث كلمة المرور (الدالة الجديدة)
+        function updatePassword(storeId, newPass) {
+            dbAdmin.ref('Admin_Users/' + storeId).update({ password: newPass });
         }
 
         // إيقاف أو تفعيل عميل
