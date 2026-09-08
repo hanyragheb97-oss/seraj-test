@@ -220,7 +220,7 @@ function smartFilterText(rawText) {
 }
 
 // ----------------------------------------------------
-// لوب إعادة فتح المايك الإجباري وتجاهل إيرور السكوت
+// لوب إعادة فتح المايك الإجباري و تجاهل إيرور السكوت
 // ----------------------------------------------------
 function setupMic() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
