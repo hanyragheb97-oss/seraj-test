@@ -708,8 +708,12 @@ table th {
             tr.ontouchend = endPress;
         }
 
-        function renderSuppliersList() {
-            if(typeof DB !== 'undefined') { suppliersDB = DB.getSuppliers() || []; }
+function renderSuppliersList() {
+            if(typeof DB !== 'undefined') { 
+                let allSupp = DB.getSuppliers() || []; 
+                // 🌟 استبعاد الموردين المحذوفين والمخفيين 🌟
+                suppliersDB = allSupp.filter(s => s.isDeleted !== true && s.deleted !== true);
+            }
             
             if (document.getElementById('supplier-account-view').classList.contains('active-view') && currentActiveSupplierId) {
                 updateAccountSummary(suppliersDB.find(x => x.id === currentActiveSupplierId));
@@ -866,20 +870,41 @@ filtered.forEach(item => {
             }, 300);
         }
 
-        function deleteSupplier(e) {
+function deleteSupplier(e) {
             if(e) { e.preventDefault(); e.stopPropagation(); }
             let id = parseFloat(document.getElementById('editSuppId').value);
             let s = suppliersDB.find(x => x.id === id);
             if(!s) return;
             
+            // 1. شرط الأمان: منع حذف مورد عليه فلوس أو له فلوس
             let currentBal = Math.abs(s.balance || 0);
-            if(currentBal > 0.05) {
+            if(currentBal > 0.05) { 
                 return alert("❌ لا يمكن حذف مورد له أو عليه رصيد! قم بتصفية حسابه (الرصيد 0.00) أولاً.");
             }
             
-            if(confirm("هل أنت متأكد من حذف هذا المورد نهائياً؟\n(سيتم الاحتفاظ بفواتيره القديمة في الأرشيف كإثبات ولكن سيختفي حسابه من هنا)")) {
-                suppliersDB = suppliersDB.filter(x => x.id !== id);
-                if(typeof DB !== 'undefined') DB.saveSuppliers(suppliersDB);
+            if(confirm("هل أنت متأكد من حذف هذا المورد نهائياً؟\n(سيختفي من جميع الأجهزة فور المزامنة)")) {
+                
+                // 2. إعطاء ختم الإخفاء 
+                let sIndex = suppliersDB.findIndex(x => x.id === id);
+                if(sIndex !== -1) {
+                    suppliersDB[sIndex].isDeleted = true;
+                    suppliersDB[sIndex]._lastModified = Date.now();
+                }
+                
+                // 3. الحفظ وإرسال أمر الحذف الصريح للسيرفر
+                if(typeof DB !== 'undefined') {
+                    DB.saveSuppliers(suppliersDB); 
+                    
+                    // 🌟 أمر مباشر لطابور المزامنة 🌟
+                    if (typeof saveActionToQueueSafely === 'function') {
+                        saveActionToQueueSafely({
+                            type: 'delete_supplier',
+                            docId: id.toString(),
+                            timestamp: Date.now()
+                        });
+                    }
+                }
+                
                 setTimeout(() => {
                     closeModals();
                     renderSuppliersList();
