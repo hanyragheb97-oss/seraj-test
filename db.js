@@ -198,7 +198,11 @@ const DB = {
     saveProducts: function(data) { localStorage.setItem('seraj_products', JSON.stringify(data)); saveArrayToQueueSafely('products', data); },
     
     getCustomers: function() { return JSON.parse(localStorage.getItem('seraj_customers')) || []; },
-    saveCustomers: function(data) { localStorage.setItem('seraj_customers', JSON.stringify(data)); saveArrayToQueueSafely('customers', data); },
+ saveCustomers: function(data) { 
+        data.forEach(c => { if (!c._lastModified) c._lastModified = Date.now(); });
+        localStorage.setItem('seraj_customers', JSON.stringify(data)); 
+        saveArrayToQueueSafely('customers', data); 
+    },
     
     getSalesInvoices: function() { return JSON.parse(localStorage.getItem('seraj_sales_invoices')) || []; },
     saveSalesInvoices: function(data) { 
@@ -208,7 +212,11 @@ const DB = {
     },
     
     getSuppliers: function() { return JSON.parse(localStorage.getItem('seraj_suppliers')) || []; },
-    saveSuppliers: function(data) { localStorage.setItem('seraj_suppliers', JSON.stringify(data)); saveArrayToQueueSafely('suppliers', data); },
+saveSuppliers: function(data) { 
+        data.forEach(s => { if (!s._lastModified) s._lastModified = Date.now(); });
+        localStorage.setItem('seraj_suppliers', JSON.stringify(data)); 
+        saveArrayToQueueSafely('suppliers', data); 
+    },
     
     getPurchaseInvoices: function() { return JSON.parse(localStorage.getItem('seraj_purchase_invoices')) || []; },
     savePurchaseInvoices: function(data) { localStorage.setItem('seraj_purchase_invoices', JSON.stringify(data)); saveArrayToQueueSafely('purchase_invoices', data); },
