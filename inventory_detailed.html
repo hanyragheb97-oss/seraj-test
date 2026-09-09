@@ -242,11 +242,12 @@
                     // فلتر البحث
                     if (query && !(product.name || "").toLowerCase().includes(query)) return;
 
-                    // لو الصنف متسجل بنظام الدفعات (Lots)
+// لو الصنف متسجل بنظام الدفعات (Lots)
                     if (product.lots && product.lots.length > 0) {
                         product.lots.forEach(lot => {
                             let lotQty = parseFloat(lot.stock) || 0;
-                            if (lotQty <= 0) return; // بنتجاهل الدفعات الصفرية أو المرتجعات
+                            // 🌟 التعديل السحري: هنستثني الصفر بس، لكن هنسمح للسالب والموجب يعدوا 🌟
+                            if (lotQty === 0) return; 
 
                             let lotPrice = parseFloat(lot.purchasePrice) || parseFloat(lot.buyPrice) || parseFloat(lot.cost) || parseFloat(lot.price) || 0;
                             let lotTotal = lotQty * lotPrice;
