@@ -22,7 +22,7 @@
             --text-white: #ffffff;
         }
 
-        body { 
+html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
@@ -32,6 +32,8 @@
             overflow-x: hidden; 
             -webkit-tap-highlight-color: transparent;
             min-height: 100vh;
+            overscroll-behavior-y: none !important;
+            overscroll-behavior: none !important;
         }
         
         .header { 
@@ -64,7 +66,7 @@
         .quick-add-btn { background: rgba(7, 9, 19, 0.95); color: #00ff66; border: 2px solid #00ff66; border-radius: 16px; width: 55px; height: 55px; font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 102, 0.4); transition: all 0.2s;}
         .quick-add-btn:active { transform: scale(0.95); box-shadow: 0 0 25px rgba(0, 255, 102, 0.8); background: rgba(0, 255, 102, 0.2); }
 
-        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
+   .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 70vh; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
         .dropdown-item { padding: 12px 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-white); font-weight: bold; font-size: 16px;}
         .dropdown-item:active { background-color: rgba(168, 85, 247, 0.3); }
         .stock-badge { background: linear-gradient(135deg, #9333ea, #db2777); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(219, 39, 119, 0.5);}
@@ -276,7 +278,7 @@
 
     <div class="purchases-container">
         <div class="search-container">
-            <input type="text" id="productSearch" class="search-input" placeholder="ابحث لادراج منتج للشراء..." oninput="searchProducts()">
+            <input type="text" id="productSearch" class="search-input" placeholder="ابحث لادراج منتج للشراء..." oninput="searchProducts()" onclick="this.select()">
             <button class="quick-add-btn" onclick="openQuickAddModal()">➕</button>
             <div id="productResults" class="dropdown-list"></div>
         </div>
@@ -445,12 +447,15 @@
         function goBack() { window.location.href = 'index.html'; }
         function goBackSmart() { window.location.href = 'index.html'; }
 
-        function searchProducts() {
-            loadDB(); 
+function searchProducts() {
+            loadDB(); // التحديث اللحظي للأصناف
             const rawQuery = document.getElementById('productSearch').value.trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
             const resultsDiv = document.getElementById('productResults');
-            resultsDiv.innerHTML = '';
+            resultsDiv.innerHTML = ''; 
+            
+            // 🌟 السطر السحري اللي بيرجع القائمة لأولها مع كل حرف تكتبه 🌟
+            resultsDiv.scrollTop = 0; 
             
             if(searchWords.length === 0) { resultsDiv.style.display = 'none'; return; }
 
