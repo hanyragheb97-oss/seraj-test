@@ -24,7 +24,7 @@
             --text-white: #ffffff;
         }
 
-        body { 
+html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
@@ -34,6 +34,8 @@
             overflow-x: hidden; 
             -webkit-tap-highlight-color: transparent;
             min-height: 100vh;
+            overscroll-behavior-y: none !important;
+            overscroll-behavior: none !important;
         }
         
         .header { 
@@ -76,7 +78,7 @@
         .search-input { flex: 1; padding: 14px; border: 2px solid var(--neon-border); border-radius: 16px; font-size: 18px; box-sizing: border-box; background: rgba(19, 17, 44, 0.6); box-shadow: 0 0 15px var(--neon-glow); outline: none; color: var(--text-white); font-weight: bold; transition: all 0.3s;}
         .search-input:focus { box-shadow: 0 0 30px var(--neon-glow); background: rgba(19, 17, 44, 0.9); }
         
-        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 250px; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
+.dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 70vh; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
         .dropdown-item { padding: 12px 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-white); font-weight: bold; font-size: 16px;}
         .dropdown-item:active { background-color: rgba(168, 85, 247, 0.3); }
         .stock-badge { background: linear-gradient(135deg, #9333ea, #db2777); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(219, 39, 119, 0.5);}
@@ -293,7 +295,7 @@
 
     <div class="sales-container">
         <div class="search-container">
-            <input type="text" id="productSearch" class="search-input" placeholder="ابحث عن منتج بالاسم..." oninput="searchProducts()" onclick="this.select()">
+  <input type="text" id="productSearch" class="search-input" placeholder="ابحث عن منتج بالاسم..." oninput="searchProducts()">
             <div id="productResults" class="dropdown-list"></div>
         </div>
 
@@ -480,12 +482,15 @@
             stockWarningTimer = setTimeout(() => { toast.style.display = 'none'; }, 5000);
         }
 
-        function searchProducts() {
+function searchProducts() {
             loadDB(); // التحديث اللحظي للأصناف
             const rawQuery = document.getElementById('productSearch').value.trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
             const resultsDiv = document.getElementById('productResults');
-            resultsDiv.innerHTML = '';
+            resultsDiv.innerHTML = ''; 
+            
+            // 🌟 السطر السحري اللي بيرجع القائمة لأولها مع كل حرف تكتبه 🌟
+            resultsDiv.scrollTop = 0; 
             
             if(searchWords.length === 0) { resultsDiv.style.display = 'none'; return; }
 
@@ -534,8 +539,12 @@
                 let cartonsNeeded = Math.ceil(deficitUnits / rate);
 
                 let todayStr = new Date().toISOString().split('T')[0];
-                let parentPurchasePrice = parentP.lots && parentP.lots.length > 0 ? parentP.lots[parentP.lots.length - 1].purchasePrice : 0;
-                let unitPurchaseCost = parentPurchasePrice > 0 ? (parentPurchasePrice / rate) : 0;
+// 🌟 لو الكرتونة سعرها صفر، نجيب سعرها الأساسي ونقسمه، ولو مفيش نحط السعر الأساسي للمفرد 🌟
+                let parentPurchasePrice = parentP.lots && parentP.lots.length > 0 ? parseFloat(parentP.lots[parentP.lots.length - 1].purchasePrice) : 0;
+                if (isNaN(parentPurchasePrice) || parentPurchasePrice === 0) {
+                    parentPurchasePrice = parseFloat(parentP.purchasePrice) || 0;
+                }
+                let unitPurchaseCost = parentPurchasePrice > 0 ? (parentPurchasePrice / rate) : (parseFloat(p.purchasePrice) || 0);
                 let currentSell = (p.lots && p.lots.length > 0) ? p.lots[p.lots.length - 1].price : (parseFloat(p.price) || 0);
 
                 if (!parentP.lots) parentP.lots = [];
@@ -902,9 +911,16 @@
                                     
                                     p.lots = p.lots.filter(l => parseFloat(l.stock) !== 0);
                                     
-                                    if (qtyToProcess > 0) { 
+if (qtyToProcess > 0) { 
                                         if(p.lots.length === 0) {
-                                            p.lots.push({ supplier: 'سحب بالسالب (عجز)', stock: -qtyToProcess, purchasePrice: 0, price: item.price, date: new Date().toISOString().split('T')[0] });
+                                            // 🌟 التعديل السحري: بدل الصفر، هياخد السعر الأساسي للمنتج 🌟
+                                            p.lots.push({ 
+                                                supplier: 'سحب بالسالب (عجز)', 
+                                                stock: -qtyToProcess, 
+                                                purchasePrice: (parseFloat(p.purchasePrice) || 0), 
+                                                price: item.price, 
+                                                date: new Date().toISOString().split('T')[0] 
+                                            });
                                         } else {
                                             p.lots[p.lots.length - 1].stock = parseFloat(p.lots[p.lots.length - 1].stock) - qtyToProcess; 
                                         }
