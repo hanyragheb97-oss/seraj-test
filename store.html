@@ -19,7 +19,7 @@
             --text-white: #ffffff;
         }
 
-        body { 
+  html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
@@ -29,7 +29,8 @@
             overflow-x: hidden; 
             -webkit-tap-highlight-color: transparent;
             min-height: 100vh;
-        overscroll-behavior-y: none; /* 🌟 السطر السحري لمنع الريفريش عند السحب لتحت 🌟 */    
+            overscroll-behavior-y: none !important;
+            overscroll-behavior: none !important;
         }
         
         .view-section { display: none; }
@@ -744,11 +745,16 @@ function renderInventoryTable() {
                 if (p.autoParentId) checkAndRunAutoUnpack(p);
             });
 
-            const rawQuery = String(document.getElementById('inventorySearch').value || '').trim().toLowerCase();
+const rawQuery = String(document.getElementById('inventorySearch').value || '').trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
 
             const tbody = document.getElementById('inventoryTableBody');
             tbody.innerHTML = '';
+            
+            // 🌟 السطر السحري لإرجاع القائمة لأولها عند التعديل في البحث 🌟
+            if(tbody.parentElement && tbody.parentElement.parentElement) {
+                tbody.parentElement.parentElement.scrollTop = 0;
+            }
 
             let filtered = [];
 
