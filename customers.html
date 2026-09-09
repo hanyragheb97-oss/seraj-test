@@ -665,8 +665,11 @@ table {
             tr.ontouchend = endPress;
         }
 
-        function renderCustomersList() {
-            if(typeof DB !== 'undefined') { customersDB = DB.getCustomers() || []; }
+function renderCustomersList() {
+            if(typeof DB !== 'undefined') { 
+                let allCust = DB.getCustomers() || []; 
+                customersDB = allCust.filter(c => !c.isDeleted);
+            }
             
             if (document.getElementById('customer-account-view').classList.contains('active-view') && currentActiveCustomerId) {
                 updateAccountSummary(customersDB.find(x => x.id === currentActiveCustomerId));
@@ -828,8 +831,12 @@ filtered.forEach(item => {
                 return alert("❌ لا يمكن حذف عميل عليه أو له رصيد! قم بتصفية حسابه (الرصيد 0.00) أولاً.");
             }
             
-            if(confirm("هل أنت متأكد من حذف هذا العميل نهائياً؟\n(سيتم الاحتفاظ بفواتيره القديمة في الأرشيف كإثبات ولكن سيختفي حسابه من هنا)")) {
-                customersDB = customersDB.filter(x => x.id !== id);
+if(confirm("هل أنت متأكد من حذف هذا العميل نهائياً؟\n(سيتم الاحتفاظ بفواتيره القديمة في الأرشيف كإثبات ولكن سيختفي حسابه من هنا)")) {
+                let cIndex = customersDB.findIndex(x => x.id === id);
+                if(cIndex !== -1) {
+                    customersDB[cIndex].isDeleted = true;
+                    customersDB[cIndex]._lastModified = Date.now();
+                }
                 if(typeof DB !== 'undefined') DB.saveCustomers(customersDB);
                 setTimeout(() => {
                     closeModals();
