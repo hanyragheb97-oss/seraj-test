@@ -20,13 +20,18 @@
             --text-main: #ffffff;
         }
 
-        body { 
+html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
-            color: var(--text-main); margin: 0; padding: 0; user-select: none; overflow-x: hidden; min-height: 100vh;
-            -webkit-touch-callout: none;
+            color: var(--text-white); 
+            margin: 0; 
+            padding: 0; 
+            user-select: none; 
+            overflow-x: hidden; 
             -webkit-tap-highlight-color: transparent;
-            padding-bottom: 90px;
+            min-height: 100vh;
+            overscroll-behavior-y: none !important;
+            overscroll-behavior: none !important;
         }
         
         .view-section { display: none; }
@@ -151,7 +156,7 @@
         <div class="customers-container">
             <div class="search-box">
                 <span style="font-size:20px; color:var(--neon-border); margin-left:10px;">≡</span>
-                <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="renderCustomersList()" onkeydown="handleSearchKey(event)">
+               <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="searchProducts()" onclick="this.select()">
             </div>
             <table id="mainCustomersTable">
                 <thead>
@@ -708,21 +713,53 @@
                 return;
             }
 
-            filtered.forEach(item => {
-                let c = item.customer;
+filtered.forEach(item => {
+                let c = item.customer; // هنا المتغير اسمه c للعميل
                 const tr = document.createElement('tr');
                 addSmartTouchLogic(tr, c.id);
                 
                 let balBadge = '';
                 let netVal = c.netBalanceVal || 0;
-              if (netVal > 0) {
-                    if (c.isNetDebt) balBadge = `<span style="color:#ff1a40; font-weight:bold; text-shadow:0 0 10px rgba(255,26,64,0.9);">${netVal.toFixed(2)}</span>`;
-                    else balBadge = `<span style="color:#00ff66; font-weight:bold; text-shadow:0 0 10px rgba(0,255,102,0.9);">${netVal.toFixed(2)}</span>`;
+                if (netVal > 0) {
+                    if (c.isNetDebt) balBadge = `<span style="color:#00ff66; font-weight:bold; text-shadow:0 0 10px rgba(0,255,102,0.9);">${netVal.toFixed(2)}</span>`;
+                    else balBadge = `<span style="color:#ff1a40; font-weight:bold; text-shadow:0 0 10px rgba(255,26,64,0.9);">${netVal.toFixed(2)}</span>`;
                 } else {
                     balBadge = `<span style="color:#00ff66; font-weight:bold; text-shadow:0 0 10px rgba(0,255,102,0.9);">0.00</span>`;
                 }
 
-                tr.innerHTML = `<td style="text-align: right;">${c.name}</td><td>${balBadge}</td><td><span class="sub-text">---</span></td>`;
+                // 🌟 البحث الشامل عن أحدث تاريخ للعميل (فواتير بيع + سندات) 🌟
+                let lastDate = 'لا يوجد';
+                let datesArray = [];
+
+                // 1. البحث في السندات
+                if (c.transactions && c.transactions.length > 0) {
+                    c.transactions.forEach(t => {
+                        if(t.date) datesArray.push(new Date(t.date));
+                    });
+                }
+
+                // 2. البحث في فواتير البيع لهذا العميل
+                if(typeof DB !== 'undefined') {
+                    // سحب فواتير البيع (بنستخدم getSalesInvoices أو getInvoices حسب تسميتك في db.js)
+                    let allSales = DB.getSalesInvoices ? DB.getSalesInvoices() : (DB.getInvoices ? DB.getInvoices() : []);
+                    let custInvs = allSales.filter(inv => inv.customer === c.name || inv.customerName === c.name);
+                    custInvs.forEach(inv => {
+                        if(inv.date) datesArray.push(new Date(inv.date));
+                    });
+                }
+
+                // 3. ترتيب التواريخ لمعرفة الأحدث
+                if (datesArray.length > 0) {
+                    datesArray.sort((a, b) => b - a); // الترتيب تنازلي
+                    lastDate = datesArray[0].toISOString().split('T')[0]; 
+                }
+
+                // طباعة الصف باللون الأبيض للتاريخ
+                tr.innerHTML = `
+                    <td style="text-align: right;">${c.name}</td>
+                    <td>${balBadge}</td>
+                    <td><span class="sub-text" style="font-weight:bold; color:var(--text-main); font-size:14px; text-shadow:0 0 5px rgba(255,255,255,0.5);">${lastDate}</span></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
