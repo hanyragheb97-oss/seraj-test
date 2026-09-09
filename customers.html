@@ -20,18 +20,13 @@
             --text-main: #ffffff;
         }
 
-html, body { 
+        body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
-            color: var(--text-white); 
-            margin: 0; 
-            padding: 0; 
-            user-select: none; 
-            overflow-x: hidden; 
+            color: var(--text-main); margin: 0; padding: 0; user-select: none; overflow-x: hidden; min-height: 100vh;
+            -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
-            min-height: 100vh;
-            overscroll-behavior-y: none !important;
-            overscroll-behavior: none !important;
+            padding-bottom: 90px;
         }
         
         .view-section { display: none; }
@@ -156,7 +151,7 @@ html, body {
         <div class="customers-container">
             <div class="search-box">
                 <span style="font-size:20px; color:var(--neon-border); margin-left:10px;">≡</span>
-               <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="searchProducts()" onclick="this.select()">
+                <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="renderCustomersList()" onkeydown="handleSearchKey(event)">
             </div>
             <table id="mainCustomersTable">
                 <thead>
