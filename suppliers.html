@@ -20,7 +20,7 @@
             --text-main: #ffffff;
         }
 
-   html, body { 
+html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
@@ -56,7 +56,7 @@
         .header-back-btn .arrow { color: white; font-size: 13px; line-height: 1; }
         .header-back-btn .text { color: white; font-size: 10px; font-weight: bold; font-family: sans-serif; }
 
-        .suppliers-container, .account-container, .statement-container { max-width: 800px; margin: auto; padding: 15px;}
+    .suppliers-container, .account-container, .statement-container { max-width: 800px; margin: auto; padding: 15px; padding-bottom: 120px; }
         
         .search-box { 
             display: flex; align-items: center; border: 2px solid var(--neon-border); border-radius: 16px; 
@@ -70,10 +70,12 @@
             border-radius: 16px; box-shadow: 0 0 20px var(--neon-glow); border: 2px solid var(--neon-border); margin-bottom: 20px;
         }
         
-        table th { 
-            background-color: #1c133a; color: var(--text-main); padding: 12px 10px; font-size: 16px; 
+table th { 
+            background-color: #1c133a; color: var(--text-main); font-size: 14px; 
+            padding: 8px 4px; /* قللنا المسافات عشان الموبايل */
             text-align: center; border-bottom: 2px solid var(--neon-border); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
             position: sticky; top: 115px; z-index: 40;
+            white-space: nowrap; /* 🌟 السطر السحري اللي بيمنع الكلمة والسهم ينزلوا تحت بعض 🌟 */
         }
 
         /* تظبيط رأس كشف الحساب وتضييق السطور */
@@ -84,6 +86,17 @@
         table tr:last-child td { border-bottom: none; }
         table tr:active { background-color: var(--neon-glow); }
         table td:first-child { text-align: right; }
+        /* 🌟 كود فك تجميد شاشة الموردين والسماح بالسحب 🌟 */
+        #suppliers-list-view {
+            height: 100vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: 120px;
+        }
+
+        #suppliersTableBody tr {
+            touch-action: pan-y !important;
+        }
 
         .inline-action-dropdown { background: var(--card-bg); border: 2px solid var(--neon-border); border-radius: 12px; margin-top: 8px; padding: 6px; box-shadow: 0 10px 25px rgba(0,0,0,0.8); display: none; text-align: right; }
         .inline-action-item { padding: 10px 14px; font-size: 15px; font-weight: bold; color: var(--text-main); border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; display: flex; align-items: center; gap: 8px; }
@@ -179,11 +192,11 @@
                 <input type="text" id="supplierSearch" placeholder="ابحث باسم المورد واضغط Enter..." oninput="renderSuppliersList()" onkeydown="handleSearchKey(event)">
             </div>
             <table>
-                <thead>
+<thead>
                     <tr>
-                        <th style="text-align: right;" onclick="sortSuppliers('name')">المورد ↕</th>
-                        <th onclick="sortSuppliers('balance')">الرصيد ↕</th>
-                        <th onclick="sortSuppliers('date')">آخر معاملة ↕</th>
+                        <th style="width: 40%; text-align: right;" onclick="sortSuppliers('name')">المورد ↕</th>
+                        <th style="width: 30%;" onclick="sortSuppliers('balance')">الرصيد ↕</th>
+                        <th style="width: 30%;" onclick="sortSuppliers('date')">آخر معاملة ↕</th>
                     </tr>
                 </thead>
                 <tbody id="suppliersTableBody"></tbody>
@@ -703,10 +716,13 @@
                 renderAccountTransactions(suppliersDB.find(x => x.id === currentActiveSupplierId));
             }
 
-            const rawQuery = document.getElementById('supplierSearch').value.trim().toLowerCase();
+     const rawQuery = document.getElementById('supplierSearch').value.trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
             const tbody = document.getElementById('suppliersTableBody');
+            
             tbody.innerHTML = '';
+            // 🌟 إرجاع شاشة الموردين لأولها عند الكتابة في البحث 🌟
+            document.getElementById('suppliers-list-view').scrollTop = 0;
 
             let filtered = [];
 
@@ -752,7 +768,7 @@
                 return;
             }
 
-            filtered.forEach(item => {
+filtered.forEach(item => {
                 let s = item.supplier;
                 const tr = document.createElement('tr');
                 addSmartTouchLogic(tr, s.id);
@@ -766,7 +782,38 @@
                     balBadge = `<span style="color:#00ff66; font-weight:bold; text-shadow:0 0 10px rgba(0,255,102,0.9);">0.00</span>`;
                 }
 
-                tr.innerHTML = `<td style="text-align: right;">${s.name}</td><td>${balBadge}</td><td><span class="sub-text">---</span></td>`;
+                // 🌟 البحث الشامل عن أحدث تاريخ للمورد (فواتير شراء + سندات) 🌟
+                let lastDate = 'لا يوجد';
+                let datesArray = [];
+
+                // 1. البحث في السندات
+                if (s.transactions && s.transactions.length > 0) {
+                    s.transactions.forEach(t => {
+                        if(t.date) datesArray.push(new Date(t.date));
+                    });
+                }
+
+                // 2. البحث في فواتير الشراء لهذا المورد
+                if(typeof DB !== 'undefined') {
+                    let allPurchases = DB.getPurchaseInvoices() || [];
+                    let suppInvs = allPurchases.filter(inv => inv.supplier === s.name || inv.supplierName === s.name);
+                    suppInvs.forEach(inv => {
+                        if(inv.date) datesArray.push(new Date(inv.date));
+                    });
+                }
+
+                // 3. ترتيب التواريخ لمعرفة الأحدث
+                if (datesArray.length > 0) {
+                    datesArray.sort((a, b) => b - a); // الترتيب تنازلي
+                    lastDate = datesArray[0].toISOString().split('T')[0]; 
+                }
+
+                // طباعة الصف باللون الأبيض المنور للتاريخ
+                tr.innerHTML = `
+                    <td style="text-align: right;">${s.name}</td>
+                    <td>${balBadge}</td>
+                    <td><span class="sub-text" style="font-weight:bold; color:var(--text-main); font-size:14px; text-shadow:0 0 5px rgba(255,255,255,0.5);">${lastDate}</span></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
