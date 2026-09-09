@@ -668,8 +668,10 @@ table {
 function renderCustomersList() {
             if(typeof DB !== 'undefined') { 
                 let allCust = DB.getCustomers() || []; 
-                customersDB = allCust.filter(c => !c.isDeleted);
+                // 🌟 دي اللي بتمنع ظهوره حتى لو الفايربيز رجعه 🌟
+                customersDB = allCust.filter(c => c.isDeleted !== true); 
             }
+            // ... (باقي الكود زي ما هو)
             
             if (document.getElementById('customer-account-view').classList.contains('active-view') && currentActiveCustomerId) {
                 updateAccountSummary(customersDB.find(x => x.id === currentActiveCustomerId));
@@ -820,24 +822,41 @@ filtered.forEach(item => {
             }, 300);
         }
 
-        function deleteCustomer(e) {
+function deleteCustomer(e) {
             if(e) { e.preventDefault(); e.stopPropagation(); }
             let id = parseFloat(document.getElementById('editCustId').value);
             let c = customersDB.find(x => x.id === id);
             if(!c) return;
             
+            // 🌟 1. شرط الأمان: منع الحذف لو الرصيد مش صفر 🌟
             let currentBal = Math.abs(c.balance || 0);
             if(currentBal > 0.05) { 
                 return alert("❌ لا يمكن حذف عميل عليه أو له رصيد! قم بتصفية حسابه (الرصيد 0.00) أولاً.");
             }
             
-if(confirm("هل أنت متأكد من حذف هذا العميل نهائياً؟\n(سيتم الاحتفاظ بفواتيره القديمة في الأرشيف كإثبات ولكن سيختفي حسابه من هنا)")) {
+            // 🌟 2. رسالة التأكيد والإخفاء الآمن للمزامنة 🌟
+            if(confirm("هل أنت متأكد من حذف هذا العميل نهائياً؟\n(سيتم الاحتفاظ بفواتيره القديمة في الأرشيف كإثبات ولكن سيختفي حسابه من هنا)")) {
+                
                 let cIndex = customersDB.findIndex(x => x.id === id);
                 if(cIndex !== -1) {
+                    // وضع علامة الحذف وتاريخ التعديل عشان الفايربيز يفهم إنه مخفي ويخفيه من باقي الأجهزة
                     customersDB[cIndex].isDeleted = true;
                     customersDB[cIndex]._lastModified = Date.now();
                 }
-                if(typeof DB !== 'undefined') DB.saveCustomers(customersDB);
+                
+                if(typeof DB !== 'undefined') {
+                    DB.saveCustomers(customersDB);
+                    
+                    // إرسال أمر المزامنة لطابور الفايربيز
+                    if (typeof saveActionToQueueSafely === 'function') {
+                        saveActionToQueueSafely({
+                            type: 'delete_customer',
+                            docId: id.toString(),
+                            timestamp: Date.now()
+                        });
+                    }
+                }
+                
                 setTimeout(() => {
                     closeModals();
                     renderCustomersList();
