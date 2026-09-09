@@ -162,7 +162,7 @@ table {
         <div class="customers-container">
             <div class="search-box">
                 <span style="font-size:20px; color:var(--neon-border); margin-left:10px;">≡</span>
-               <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="searchProducts()" onclick="this.select()">
+              <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="renderCustomersList()" onkeydown="handleSearchKey(event)" onclick="this.select()">
             </div>
             <table id="mainCustomersTable">
 <thead>
