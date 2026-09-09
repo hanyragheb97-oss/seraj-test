@@ -47,7 +47,7 @@ html, body {
             text-shadow: 0 0 12px rgba(255,255,255,0.9);
         }
 
-        .customers-container, .account-container, .statement-container { max-width: 800px; margin: auto; padding: 15px;}
+        .customers-container, .account-container, .statement-container { max-width: 800px; margin: auto; padding: 15px; padding-bottom: 120px; }
         
         .search-box { 
             display: flex; align-items: center; border: 2px solid var(--neon-border); border-radius: 16px; 
@@ -56,15 +56,21 @@ html, body {
         }
         .search-box input { flex: 1; border: none; outline: none; font-size: 18px; padding: 6px 0; background: transparent; color: var(--text-main); font-weight: bold; }
         
-        table { 
+table { 
             width: 100%; border-collapse: separate; border-spacing: 0; background: var(--card-bg); backdrop-filter: blur(10px); 
             border-radius: 16px; box-shadow: 0 0 20px var(--neon-glow); border: 2px solid var(--neon-border); margin-bottom: 20px;
+            /* 🌟 السحر لفك التجميد 🌟 */
+            display: flex; flex-direction: column; height: calc(100vh - 190px);
         }
         
+        table thead { flex-shrink: 0; display: table; width: 100%; }
+        table tbody { flex: 1; display: block; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-bottom: 60px; }
+        table tbody tr { display: table; width: 100%; table-layout: fixed; touch-action: pan-y !important; }
+
         table th { 
-            background-color: #1c133a; color: var(--text-main); padding: 12px 10px; font-size: 16px; 
-            text-align: center; border-bottom: 2px solid var(--neon-border); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-            position: sticky; top: 115px; z-index: 40;
+            background-color: #1c133a; color: var(--text-main); font-size: 14px; 
+            padding: 8px 4px; text-align: center; border-bottom: 2px solid var(--neon-border); 
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); white-space: nowrap; 
         }
         
         /* تظبيط رأس كشف الحساب وتضييق السطور */
@@ -159,11 +165,11 @@ html, body {
                <input type="text" id="customerSearch" placeholder="ابحث باسم العميل واضغط Enter..." oninput="searchProducts()" onclick="this.select()">
             </div>
             <table id="mainCustomersTable">
-                <thead>
+<thead>
                     <tr>
-                        <th style="text-align: right;" onclick="sortCustomers('name')">العميل ↕</th>
-                        <th onclick="sortCustomers('balance')">الرصيد ↕</th>
-                        <th onclick="sortCustomers('date')">آخر معاملة ↕</th>
+                        <th style="width: 40%; text-align: right;" onclick="sortCustomers('name')">العميل ↕</th>
+                        <th style="width: 30%;" onclick="sortCustomers('balance')">الرصيد ↕</th>
+                        <th style="width: 30%;" onclick="sortCustomers('date')">آخر معاملة ↕</th>
                     </tr>
                 </thead>
                 <tbody id="customersTableBody"></tbody>
@@ -667,10 +673,12 @@ html, body {
                 renderAccountTransactions(customersDB.find(x => x.id === currentActiveCustomerId));
             }
 
-            const rawQuery = document.getElementById('customerSearch').value.trim().toLowerCase();
+const rawQuery = document.getElementById('customerSearch').value.trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
             const tbody = document.getElementById('customersTableBody');
             tbody.innerHTML = '';
+            
+            tbody.scrollTop = 0;
 
             let filtered = [];
 
