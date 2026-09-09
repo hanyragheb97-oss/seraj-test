@@ -198,7 +198,11 @@ const DB = {
     saveProducts: function(data) { localStorage.setItem('seraj_products', JSON.stringify(data)); saveArrayToQueueSafely('products', data); },
     
     getCustomers: function() { return JSON.parse(localStorage.getItem('seraj_customers')) || []; },
-    saveCustomers: function(data) { localStorage.setItem('seraj_customers', JSON.stringify(data)); saveArrayToQueueSafely('customers', data); },
+ saveCustomers: function(data) { 
+        data.forEach(c => { if (!c._lastModified) c._lastModified = Date.now(); });
+        localStorage.setItem('seraj_customers', JSON.stringify(data)); 
+        saveArrayToQueueSafely('customers', data); 
+    },
     
     getSalesInvoices: function() { return JSON.parse(localStorage.getItem('seraj_sales_invoices')) || []; },
     saveSalesInvoices: function(data) { 
