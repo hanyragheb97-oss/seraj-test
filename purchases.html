@@ -11,6 +11,8 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- مكتبة الباركود -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <style>
         :root {
@@ -22,7 +24,7 @@
             --text-white: #ffffff;
         }
 
-html, body { 
+        html, body { 
             font-family: 'Segoe UI', Tahoma, sans-serif; 
             background: linear-gradient(135deg, var(--bg-dark-1), var(--bg-dark-2)); 
             color: var(--text-white); 
@@ -55,6 +57,9 @@ html, body {
 
         .header-history-btn { background: rgba(19, 17, 44, 0.8); border: 1px solid var(--neon-border); border-radius: 12px; color: var(--text-white); font-size: 16px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; padding: 6px 14px; box-shadow: 0 0 12px var(--neon-glow); transition: all 0.2s;}
         .header-history-btn:active { transform: scale(0.95); background: rgba(168, 85, 247, 0.25); }
+
+        .header-camera-btn { background: rgba(168, 85, 247, 0.2); border: 1px solid var(--neon-border); border-radius: 12px; color: var(--text-white); font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px 14px; box-shadow: 0 0 12px var(--neon-glow); transition: all 0.2s;}
+        .header-camera-btn:active { transform: scale(0.95); background: rgba(168, 85, 247, 0.4); }
         
         .purchases-container { padding: 15px; max-width: 800px; margin: auto; padding-bottom: 120px;}
         
@@ -66,7 +71,7 @@ html, body {
         .quick-add-btn { background: rgba(7, 9, 19, 0.95); color: #00ff66; border: 2px solid #00ff66; border-radius: 16px; width: 55px; height: 55px; font-size: 26px; font-weight: bold; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 255, 102, 0.4); transition: all 0.2s;}
         .quick-add-btn:active { transform: scale(0.95); box-shadow: 0 0 25px rgba(0, 255, 102, 0.8); background: rgba(0, 255, 102, 0.2); }
 
-   .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 70vh; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5);}
+        .dropdown-list { position: absolute; top: 100%; left: 0; right: 0; background: #13112c; border: 2px solid var(--neon-border); border-radius: 0 0 16px 16px; max-height: 70vh; overflow-y: auto; z-index: 100; display: none; box-shadow: 0 15px 35px rgba(0,0,0,0.5); box-sizing: border-box;}
         .dropdown-item { padding: 12px 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.2); cursor: pointer; display: flex; justify-content: space-between; align-items: center; color: var(--text-white); font-weight: bold; font-size: 16px;}
         .dropdown-item:active { background-color: rgba(168, 85, 247, 0.3); }
         .stock-badge { background: linear-gradient(135deg, #9333ea, #db2777); color: white; padding: 4px 10px; border-radius: 12px; font-size: 13px; font-weight: bold; box-shadow: 0 0 10px rgba(219, 39, 119, 0.5);}
@@ -269,7 +274,7 @@ html, body {
 <body onclick="closeAllMenus(event);">
 
     <div class="header" id="mainHeader">
-        <div style="width: 40px;"></div>
+        <button class="header-camera-btn" onclick="startBarcodeScan('productSearch', true)" title="تصوير الباركود">📷</button>
         <span id="pageTitleText" style="text-shadow: 0 0 12px rgba(255, 255, 255, 0.8);">فاتورة الشراء</span>
         <button class="header-history-btn" onclick="window.location.href='purchases_history.html'">
             <span style="font-size: 20px;">📋</span> السجل
@@ -278,7 +283,7 @@ html, body {
 
     <div class="purchases-container">
         <div class="search-container">
-            <input type="text" id="productSearch" class="search-input" placeholder="ابحث لادراج منتج للشراء..." oninput="searchProducts()" onclick="this.select()">
+            <input type="text" id="productSearch" class="search-input" placeholder="ابحث لادراج منتج للشراء..." oninput="searchProducts()">
             <button class="quick-add-btn" onclick="openQuickAddModal()">➕</button>
             <div id="productResults" class="dropdown-list"></div>
         </div>
@@ -392,6 +397,15 @@ html, body {
             
             <div class="compact-row"><label>اسم المنتج:</label><input type="text" id="newProdName"></div>
             <div class="compact-row"><label>الصنف:</label><input type="text" id="newProdCategory" value="عام"></div>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; font-size: 17px; color: var(--text-white); margin-bottom: 8px;">الباركود / الكود:</label>
+                <div style="display: flex; gap: 5px; width: 100%;">
+                    <input type="text" id="newProdBarcode" placeholder="الكود الجديد" style="flex: 1; padding: 10px; border-radius: 12px; border: 2px solid var(--neon-border); background: rgba(19, 17, 44, 0.6); color: white; font-weight: bold; outline: none; text-align: center;">
+                    <button onclick="startBarcodeScan('newProdBarcode', false)" title="تصوير الباركود" style="background: rgba(168, 85, 247, 0.3); border: 1px solid var(--neon-border); border-radius: 10px; color: white; cursor: pointer; padding: 0 15px; font-size: 18px;">📷</button>
+                </div>
+            </div>
+
             <div class="compact-row"><label>سعر الشراء:</label><input type="number" id="newProdPurchase" value="0" onclick="this.select()"></div>
             <div class="compact-row"><label>سعر البيع:</label><input type="number" id="newProdPrice" value="0" onclick="this.select()"></div>
             
@@ -401,9 +415,16 @@ html, body {
             </div>
         </div>
     </div>
-    
-    <div id="printReceiptArea"></div>
-<script src="db.js"></script>
+    <!-- نافذة قراءة الباركود بالكاميرا -->
+    <div class="modal-overlay" id="scannerModal" style="display: none; z-index: 500;">
+        <div class="compact-modal" style="text-align: center; padding: 15px;">
+            <div class="compact-header"><h3 style="margin:0;">📷 توجيه الكاميرا للباركود</h3></div>
+            <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden; margin-top: 10px;"></div>
+            <button class="btn-close-ai" style="width: 100%; margin-top: 15px; padding: 12px; font-weight: bold; border-radius: 10px;" onclick="stopBarcodeScan()">إغلاق الكاميرا</button>
+        </div>
+    </div>
+
+    <script src="db.js"></script>
 
     <script>
         function applyFallbackTheme() {
@@ -423,7 +444,6 @@ html, body {
                     suppliersDB = DB.getSuppliers() || [];
                     purchaseInvoicesDB = DB.getPurchaseInvoices() || [];
                 } else {
-                    // كود طوارئ لو db.js مأخر في التحميل
                     productsDB = JSON.parse(localStorage.getItem('seraj_products')) || [];
                     suppliersDB = JSON.parse(localStorage.getItem('seraj_suppliers')) || [];
                     purchaseInvoicesDB = JSON.parse(localStorage.getItem('seraj_purchase_invoices')) || [];
@@ -442,19 +462,17 @@ html, body {
             renderTable();
         };
 
-        // دالة الرجوع الموحدة القوية
         function handleExit() { window.location.href = 'index.html'; }
         function goBack() { window.location.href = 'index.html'; }
         function goBackSmart() { window.location.href = 'index.html'; }
 
-function searchProducts() {
-            loadDB(); // التحديث اللحظي للأصناف
+        function searchProducts() {
+            loadDB(); 
             const rawQuery = document.getElementById('productSearch').value.trim().toLowerCase();
             const searchWords = rawQuery.split(' ').filter(word => word.length > 0);
             const resultsDiv = document.getElementById('productResults');
             resultsDiv.innerHTML = ''; 
             
-            // 🌟 السطر السحري اللي بيرجع القائمة لأولها مع كل حرف تكتبه 🌟
             resultsDiv.scrollTop = 0; 
             
             if(searchWords.length === 0) { resultsDiv.style.display = 'none'; return; }
@@ -483,7 +501,20 @@ function searchProducts() {
                     const div = document.createElement('div'); div.className = 'dropdown-item';
                     div.innerHTML = `<div><strong>${p.name}</strong><br><span style="color:var(--neon-border);">سعر البيع الحالي: ${dispPrice} جنيه</span></div> <span class="stock-badge">رصيد: ${totalStock}</span>`;
                     
-                    div.onmousedown = (e) => { e.preventDefault(); openEditModalForNewItem(p.id); };
+              div.onmousedown = (e) => { 
+                        e.preventDefault(); 
+                        
+                        // فحص لو الصنف موجود في الفاتورة نطلع رسالة ونلغي
+                        let existsIndex = invoice.findIndex(invItem => String(invItem.id) === String(p.id));
+                        if(existsIndex > -1) {
+                            alert("الصنف موجود مسبقاً في الفاتورة!");
+                            document.getElementById('productSearch').value = ''; 
+                            resultsDiv.style.display = 'none';
+                            return; 
+                        }
+
+                        openEditModalForNewItem(p.id); 
+                    };
                     resultsDiv.appendChild(div);
                 });
             } else {
@@ -583,68 +614,59 @@ function searchProducts() {
             document.getElementById('editModalOverlay').style.display = 'flex';
         }
 
-     function saveItemEdit() {
-        let newPPrice = parseFloat(document.getElementById('editPrice').value) || 0;
-        let newSPrice = parseFloat(document.getElementById('editSellPrice').value) || 0;
-        let newQty = parseFloat(document.getElementById('editQty').value) || 1;
+        function saveItemEdit() {
+            let newPPrice = parseFloat(document.getElementById('editPrice').value) || 0;
+            let newSPrice = parseFloat(document.getElementById('editSellPrice').value) || 0;
+            let newQty = parseFloat(document.getElementById('editQty').value) || 1;
 
-        if (newPPrice > newSPrice) {
-            alert(`❌ تنبيه: سعر الشراء (${newPPrice}) أعلى من سعر البيع (${newSPrice})! يرجى المراجعة.`);
-            return; 
-        }
+            if (newPPrice > newSPrice) {
+                alert(`❌ تنبيه: سعر الشراء (${newPPrice}) أعلى من سعر البيع (${newSPrice})! يرجى المراجعة.`);
+                return; 
+            }
 
-        let indexVal = String(document.getElementById('editItemIndex').value).trim();
+            let indexVal = String(document.getElementById('editItemIndex').value).trim();
 
-        if (indexVal.startsWith('new_')) {
-            // التعديل: هنا هنستخرج الـ ID بذكاء عشان نتجنب أي تقطيع غلط
-            let prodId = indexVal.replace('new_', ''); 
-            
-            // البحث عن الصنف، حولنا الاتنين لنص (String) لضمان التطابق 100% مع أصناف الإكسيل
-            let p = productsDB.find(x => String(x.id) === prodId);
-            
-            if (p) {
-                const existingIndex = invoice.findIndex(item => String(item.id) === String(p.id));
+            if (indexVal.startsWith('new_')) {
+                let prodId = indexVal.replace('new_', ''); 
+                let p = productsDB.find(x => String(x.id) === prodId);
                 
-                if (existingIndex > -1) {
-                    // لو الصنف موجود في الفاتورة، هنزود كميته ونحدث أسعاره
-                    invoice[existingIndex].qty += newQty; 
-                    invoice[existingIndex].purchasePrice = newPPrice;
-                    invoice[existingIndex].sellPrice = newSPrice;
-                    // تحديث الإجمالي للسطر ده (السعر × الكمية)
-                    invoice[existingIndex].total = newPPrice * invoice[existingIndex].qty;
+                if (p) {
+                    const existingIndex = invoice.findIndex(item => String(item.id) === String(p.id));
+                    if (existingIndex > -1) {
+                        invoice[existingIndex].qty += newQty; 
+                        invoice[existingIndex].purchasePrice = newPPrice;
+                        invoice[existingIndex].sellPrice = newSPrice;
+                        invoice[existingIndex].total = newPPrice * invoice[existingIndex].qty;
+                    } else {
+                        invoice.unshift({ 
+                            ...p, 
+                            purchasePrice: newPPrice, 
+                            sellPrice: newSPrice, 
+                            qty: newQty,
+                            total: newPPrice * newQty 
+                        });
+                    }
                 } else {
-                    // لو الصنف جديد، هنضيفه للفاتورة من فوق (unshift)
-                    invoice.unshift({ 
-                        ...p, 
-                        purchasePrice: newPPrice, 
-                        sellPrice: newSPrice, 
-                        qty: newQty,
-                        total: newPPrice * newQty 
-                    });
+                    alert("حدث خطأ: لم يتم العثور على بيانات هذا الصنف.");
+                    return;
                 }
             } else {
-                console.error("لم يتم العثور على الصنف في المخزن! ID: " + prodId);
-                alert("حدث خطأ: لم يتم العثور على بيانات هذا الصنف.");
-                return;
+                let idx = parseInt(indexVal);
+                if (!isNaN(idx) && invoice[idx]) {
+                    invoice[idx].purchasePrice = newPPrice;
+                    invoice[idx].sellPrice = newSPrice;
+                    invoice[idx].qty = newQty;
+                    invoice[idx].total = newPPrice * newQty;
+                }
             }
-        } else {
-            // ده في حالة التعديل على صنف موجود فعلاً جوه الجدول
-            let idx = parseInt(indexVal);
-            if (!isNaN(idx) && invoice[idx]) {
-                invoice[idx].purchasePrice = newPPrice;
-                invoice[idx].sellPrice = newSPrice;
-                invoice[idx].qty = newQty;
-                invoice[idx].total = newPPrice * newQty;
-            }
+
+            saveDraft(); 
+            closeModals(); 
+            renderTable();
+            let searchInput = document.getElementById('productSearch');
+            if(searchInput) searchInput.focus();
         }
 
-        saveDraft(); 
-        closeModals(); 
-        renderTable();
-        // التركيز مرة تانية على مربع البحث لسرعة إدخال الصنف اللي بعده
-        let searchInput = document.getElementById('productSearch');
-        if(searchInput) searchInput.focus();
-    }
 function renderTable() {
             const tbody = document.getElementById('invoiceItems');
             tbody.innerHTML = ''; let subTotal = 0;
@@ -658,117 +680,76 @@ function renderTable() {
                 const tr = document.createElement('tr');
                 tr.className = 'swipe-row';
                 
-                // متغيرات التاتش المضبوطة
-                let startX = 0; let startY = 0; let isDown = false; let isSwiping = false; 
-                let isLongPress = false; let isScrolling = false; let pressTimer; let startTime = 0;
+                let startX = 0; let currentX = 0; let isDragging = false; let pressTimer = null;
+                let lastClickTime = 0; // 🌟 مانع الدبل كليك 🌟
+                let isLongPress = false;
 
-                const startAction = (x, y) => {
-                    startX = x; startY = y; 
-                    isDown = true; isSwiping = false; isLongPress = false; isScrolling = false;
-                    startTime = Date.now();
-                    tr.style.transition = 'none';
-                    
-                    // ضغطة طويلة (ثانية كاملة)
+                const onStart = (clientX) => {
+                    startX = clientX; currentX = startX; isDragging = true; isLongPress = false;
                     pressTimer = setTimeout(() => {
-                        if (isScrolling || isSwiping) return; 
-                        isLongPress = true; isDown = false; 
-                        openEditModal(index);
-                    }, 1000); 
-                };
-
-                const moveAction = (x, y) => {
-                    if (!isDown) return;
-                    let diffX = x - startX;
-                    let diffY = y - startY;
-                    
-                    // اكتشاف السكرول
-                    if (Math.abs(diffY) > 8) { 
-                        isScrolling = true; 
-                        clearTimeout(pressTimer); 
-                        return; 
-                    }
-
-                    // السحب الجانبي للحذف
-                    if (Math.abs(diffX) > 15 && !isScrolling) { 
-                        isSwiping = true; 
-                        clearTimeout(pressTimer); 
-                        tr.style.transform = `translateX(${diffX}px)`; 
-                        tr.style.opacity = `${1 - Math.abs(diffX) / 300}`;
-                    }
-                };
-
-                const endAction = (x, y) => {
-                    if (!isDown && !isSwiping) return; 
-                    isDown = false; clearTimeout(pressTimer); 
-                    
-                    let touchDuration = Date.now() - startTime;
-                    let finalDiffX = Math.abs(x - startX);
-                    let finalDiffY = Math.abs(y - startY);
-
-                    if (isScrolling) {
-                        tr.style.transition = 'transform 0.2s ease-out, opacity 0.2s ease-out';
-                        tr.style.transform = 'translateX(0)';
-                        tr.style.opacity = '1';
-                        return; 
-                    }
-
-                    if (isSwiping) {
-                        let diffX = x - startX;
-                        if (Math.abs(diffX) > 90) {
-                            tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
-                            tr.style.transform = `translateX(${diffX > 0 ? 100 : -100}%)`; 
-                            tr.style.opacity = '0';
-                            setTimeout(() => { invoice.splice(index, 1); saveDraft(); renderTable(); }, 250);
-                        } else {
-                            tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                            tr.style.transform = 'translateX(0)'; 
-                            tr.style.opacity = '1';
+                        if (isDragging && Math.abs(currentX - startX) < 10) { 
+                            isDragging = false; isLongPress = true; openEditModal(index); 
                         }
-                    } else if (!isLongPress) {
-                        // الزيادة بكليك سريعة جداً بدون حركة
-                        if (touchDuration < 300 && finalDiffX < 10 && finalDiffY < 10) {
-                            tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
-                            tr.style.transform = 'translateX(0)'; 
-                            tr.style.opacity = '1';
-
-                            let updatedItem = invoice.splice(index, 1)[0];
-                            updatedItem.qty += 1;
-                            invoice.unshift(updatedItem); 
-                            saveDraft(); 
-                            renderTable();
-                        }
-                    }
-                    isSwiping = false; isScrolling = false;
+                    }, 600);
                 };
 
-                tr.ontouchstart = (e) => { startAction(e.touches[0].clientX, e.touches[0].clientY); };
-                tr.ontouchmove = (e) => { moveAction(e.touches[0].clientX, e.touches[0].clientY); };
-                tr.ontouchend = (e) => { endAction(e.changedTouches[0].clientX, e.changedTouches[0].clientY); };
-                tr.onmousedown = (e) => { startAction(e.clientX, e.clientY); };
-                tr.onmousemove = (e) => { moveAction(e.clientX, e.clientY); };
-                tr.onmouseup = (e) => { endAction(e.clientX, e.clientY); };
-                tr.onmouseleave = (e) => { if (isDown) endAction(e.clientX, e.clientY); };
+                const onMove = (clientX) => {
+                    if (!isDragging) return;
+                    currentX = clientX; let diff = currentX - startX;
+                    if (Math.abs(diff) > 15) {
+                        clearTimeout(pressTimer); tr.style.transform = `translateX(${diff}px)`; tr.style.opacity = `${1 - Math.abs(diff) / 300}`;
+                    }
+                };
+
+                const onEnd = () => {
+                    if (!isDragging) return;
+                    isDragging = false; clearTimeout(pressTimer); let diff = currentX - startX;
+                    if (Math.abs(diff) > 90) {
+                        tr.style.transition = 'transform 0.25s ease, opacity 0.25s ease';
+                        tr.style.transform = `translateX(${diff > 0 ? 100 : -100}%)`; tr.style.opacity = '0';
+                        setTimeout(() => { invoice.splice(index, 1); saveDraft(); renderTable(); }, 250);
+                    } else {
+                        tr.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+                        tr.style.transform = 'translateX(0)'; tr.style.opacity = '1';
+                    }
+                };
+
+                tr.onmousedown = (e) => { onStart(e.clientX); }; tr.onmousemove = (e) => { onMove(e.clientX); };
+                tr.onmouseup = (e) => { onEnd(); }; tr.onmouseleave = (e) => { if(isDragging) onEnd(); };
+                tr.ontouchstart = (e) => { onStart(e.touches[0].clientX); }; tr.ontouchmove = (e) => { onMove(e.touches[0].clientX); }; tr.ontouchend = (e) => { onEnd(); };
+
+                // 🌟 دالة الزيادة في مكانها مع منع الدبل كليك 🌟
+                tr.onclick = (e) => {
+                    let now = Date.now();
+                    if (now - lastClickTime < 400) { e.preventDefault(); return; }
+                    lastClickTime = now;
+
+                    if (Math.abs(currentX - startX) < 10 && !isLongPress) {
+                        invoice[index].qty += 1;
+                        invoice[index].total = (parseFloat(invoice[index].purchasePrice) || 0) * invoice[index].qty;
+                        
+                        saveDraft(); 
+                        renderTable();
+                    }
+                };
 
                 tr.innerHTML = `
                     <td style="text-align: right; font-weight:bold; color: var(--text-white);">${item.name}</td>
                     <td style="color: var(--text-white); font-weight:bold;">${itemPrice.toFixed(2)}</td>
                     <td style="font-weight:bold; color: var(--text-white);">${itemQty}</td>
-                    <td style="font-weight:bold; color: #ff3333; text-shadow: 0 0 12px rgba(255, 51, 51, 0.9);">${itemTot.toFixed(2)}</td>
+                    <td style="font-weight:bold; color: #ff1a40; text-shadow: 0 0 12px rgba(255, 26, 64, 0.9);">${itemTot.toFixed(2)}</td>
                 `;
                 tbody.appendChild(tr);
             });
             
             document.getElementById('mainTotal').innerText = subTotal.toFixed(2);
 
-            let saveBtn = document.getElementById('mainSaveBtn');
             let totalDiv = document.getElementById('totalDisplayDiv');
-
+            let saveBtn = document.getElementById('mainSaveBtn');
             if(invoice.length === 0) {
-                saveBtn.style.display = 'none';
-                totalDiv.style.display = 'none';
+                totalDiv.style.display = 'none'; saveBtn.style.display = 'none';
             } else {
-                saveBtn.style.display = 'flex';
-                totalDiv.style.display = 'flex';
+                totalDiv.style.display = 'flex'; saveBtn.style.display = 'flex';
             }
         }
 
@@ -778,8 +759,8 @@ function renderTable() {
             
             let searchVal = document.getElementById('productSearch').value.trim();
             document.getElementById('newProdName').value = searchVal;
-            
             document.getElementById('newProdCategory').value = 'عام';
+            document.getElementById('newProdBarcode').value = '';
             document.getElementById('newProdPurchase').value = '';
             document.getElementById('newProdPrice').value = '';
             
@@ -789,13 +770,19 @@ function renderTable() {
         function saveNewProductQuick() {
             let name = document.getElementById('newProdName').value.trim();
             let cat = document.getElementById('newProdCategory').value.trim() || "عام";
+            let barcode = document.getElementById('newProdBarcode').value.trim();
             let pPrice = parseFloat(document.getElementById('newProdPurchase').value) || 0;
             let sPrice = parseFloat(document.getElementById('newProdPrice').value) || 0;
             
             if(!name) return alert("أدخل اسم المنتج!");
             
+            if(barcode) {
+                let exists = productsDB.some(p => String(p.barcode) === barcode);
+                if(exists) return alert("هذا الباركود مستخدم بالفعل لمنتج آخر!");
+            }
+
             loadDB();
-            let newProd = { id: Date.now().toString(), name: name, category: cat, purchasePrice: pPrice, price: sPrice, stock: 0, lots: [] };
+            let newProd = { id: Date.now().toString(), name: name, category: cat, barcode: barcode, purchasePrice: pPrice, price: sPrice, stock: 0, lots: [] };
             productsDB.push(newProd); 
             if(typeof DB !== 'undefined') DB.saveProducts(productsDB);
             
@@ -1107,6 +1094,72 @@ function renderTable() {
             lastSavedInvoice = null;
         }
 
+        // ================= نظام تشغيل الكاميرا =================
+        let html5QrCode = null;
+        let currentBarcodeTargetId = '';
+        let isDirectSearch = false;
+
+        function startBarcodeScan(targetInputId, directSearch = false) {
+            currentBarcodeTargetId = targetInputId;
+            isDirectSearch = directSearch;
+            document.getElementById('scannerModal').style.display = 'flex';
+            
+            setTimeout(() => {
+                if (html5QrCode) {
+                    html5QrCode.stop().then(() => { html5QrCode.clear(); startCamera(); }).catch(e => { startCamera(); });
+                } else {
+                    html5QrCode = new Html5Qrcode("reader");
+                    startCamera();
+                }
+            }, 100);
+        }
+
+        function startCamera() {
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                (decodedText, decodedResult) => {
+                    let beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); 
+                    beep.play().catch(e => {});
+
+                    stopBarcodeScan();
+
+                    document.getElementById(currentBarcodeTargetId).value = decodedText;
+
+                    if (isDirectSearch) {
+                        loadDB();
+                        let p = productsDB.find(x => String(x.barcode) === decodedText || String(x.id) === decodedText);
+                     if (p) {
+                            let existsIndex = invoice.findIndex(invItem => String(invItem.id) === String(p.id));
+                            if(existsIndex > -1) {
+                                alert("الصنف موجود مسبقاً في الفاتورة!");
+                                document.getElementById('productSearch').value = '';
+                            } else {
+                                openEditModalForNewItem(p.id); 
+                                document.getElementById('productSearch').value = ''; 
+                            }
+                        } else {
+                            alert("الصنف غير موجود في المخزن! تأكد من إضافته أولاً.");
+                        }
+                    }
+                },
+                (errorMessage) => { }
+            ).catch((err) => {
+                alert("يرجى التأكد من إعطاء صلاحية الكاميرا للمتصفح.");
+                document.getElementById('scannerModal').style.display = 'none';
+            });
+        }
+
+        function stopBarcodeScan() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => { html5QrCode.clear(); html5QrCode = null; document.getElementById('scannerModal').style.display = 'none'; }).catch(err => { document.getElementById('scannerModal').style.display = 'none'; });
+            } else {
+                document.getElementById('scannerModal').style.display = 'none';
+            }
+        }
+    </script>
+    <script src="ai_brain.js"></script>
+    <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('/sw.js')
@@ -1115,6 +1168,7 @@ function renderTable() {
             });
         }
     </script>
- <script src="ai_brain.js"></script>   
 </body>
 </html>
+    
+    <div id="printReceiptArea"></div>
