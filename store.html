@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#070913">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- مكتبة قراءة الباركود باستخدام كاميرا الموبايل -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         :root {
             --neon-border: #a855f7;
@@ -190,11 +192,18 @@
         .compact-modal { background: rgba(19, 17, 44, 0.95); padding: 25px; border-radius: 24px; width: 92%; max-width: 420px; box-shadow: 0 0 45px rgba(168, 85, 247, 0.6); max-height: 92vh; overflow-y: auto; border: 2px solid var(--neon-border);}
         .compact-header { border-bottom: 2px solid rgba(168, 85, 247, 0.3); padding-bottom: 15px; margin-bottom: 20px; text-align: center;}
         .compact-header h3 { margin: 0; font-size: 20px; color: var(--text-white); text-shadow: 0 0 12px rgba(255, 255, 255, 0.8); }
-        .form-row { margin-bottom: 15px; }
-        .form-row label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 16px; color: var(--text-white); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);}
-        .form-row input, .form-row select { width: 100%; padding: 12px; font-size: 18px; text-align: center; border: 2px solid var(--neon-border); border-radius: 14px; font-weight: bold; box-sizing: border-box; background: rgba(19, 17, 44, 0.6); color: var(--text-white); box-shadow: 0 0 10px var(--neon-glow); outline: none;}
+/* تعديل شكل نوافذ الإضافة والتعديل لتكون الكلمة بجوار المربع */
+        .form-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 10px; }
+        .form-row label { font-weight: bold; font-size: 15px; color: var(--text-white); text-shadow: 0 0 8px rgba(255, 255, 255, 0.5); flex: 1; text-align: right; margin: 0; white-space: nowrap; }
+        .form-row input, .form-row select { flex: 2; padding: 10px; font-size: 16px; text-align: center; border: 2px solid var(--neon-border); border-radius: 12px; font-weight: bold; box-sizing: border-box; background: rgba(19, 17, 44, 0.6); color: var(--text-white); box-shadow: 0 0 10px var(--neon-glow); outline: none; width: 100%; }
         .form-row input:focus, .form-row select:focus { box-shadow: 0 0 25px rgba(168, 85, 247, 0.8); border-color: #ec4899; }
         .form-row select option { background: #13112c; color: #ffffff; }
+
+        /* ستايل لزرار الكاميرا اللي جنب حقل الباركود */
+        .barcode-input-group { display: flex; flex: 2; gap: 5px; width: 100%; }
+        .barcode-input-group input { flex: 1; }
+        .barcode-input-group button { background: rgba(168, 85, 247, 0.3); border: 1px solid var(--neon-border); border-radius: 10px; color: white; cursor: pointer; padding: 0 10px; font-size: 18px; display: flex; align-items: center; justify-content: center; }
+        .barcode-input-group button:active { background: #ec4899; }
         
         .btn-group { display: flex; gap: 12px; margin-top: 25px; border-top: 2px solid rgba(168, 85, 247, 0.3); padding-top: 20px; }
         .btn-group button { flex: 1; padding: 14px; border: none; border-radius: 14px; cursor: pointer; font-size: 18px; font-weight: bold; color: white; box-shadow: 0 0 15px rgba(0,0,0,0.3); transition: all 0.2s;}
@@ -346,12 +355,21 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="addProductModal" onclick="this.style.display='none'">
+<div class="modal-overlay" id="addProductModal" onclick="this.style.display='none'">
         <div class="compact-modal" onclick="event.stopPropagation()">
             <div class="compact-header"><h3>إضافة منتج جديد</h3></div>
-            <div class="form-row"><label>اسم المنتج:</label><input type="text" id="addProdName"></div>
+            <div class="form-row"><label>الاسم:</label><input type="text" id="addProdName"></div>
             <div class="form-row"><label>الصنف:</label><input type="text" id="addProdCategory" placeholder="مثال: كهرباء..."></div>
-            <div class="form-row"><label>الكود (اختياري):</label><input type="text" id="addProdBarcode" placeholder="يترك فارغاً للتلقائي"></div>
+            
+            <!-- حقل الباركود الجديد مع زرار الكاميرا -->
+            <div class="form-row">
+                <label>الكود:</label>
+                <div class="barcode-input-group">
+                    <input type="text" id="addProdBarcode" placeholder="تلقائي / أو صور بالباركود">
+                    <button onclick="startBarcodeScan('addProdBarcode')" title="تصوير الباركود">📷</button>
+                </div>
+            </div>
+
             <div class="form-row"><label>سعر الشراء:</label><input type="number" id="addProdPurchase" value="0" min="0" step="any" onclick="this.select()"></div>
             <div class="form-row"><label>سعر البيع:</label><input type="number" id="addProdPrice" value="0" min="0" step="any" onclick="this.select()"></div>
             <div class="form-row"><label>الكمية الافتتاحية:</label><input type="number" id="addProdStock" value="0" step="any" onclick="this.select()"></div>
@@ -362,12 +380,21 @@
         </div>
     </div>
 
-    <div class="modal-overlay" id="editProductModal" onclick="this.style.display='none'">
+<div class="modal-overlay" id="editProductModal" onclick="this.style.display='none'">
         <div class="compact-modal" onclick="event.stopPropagation()">
             <div class="compact-header"><h3>تعديل بيانات المنتج</h3></div>
-            <div class="form-row"><label>اسم المنتج:</label><input type="text" id="editProdName"></div>
+            <div class="form-row"><label>الاسم:</label><input type="text" id="editProdName"></div>
             <div class="form-row"><label>الصنف:</label><input type="text" id="editProdCategory"></div>
-            <div class="form-row"><label>الكود:</label><input type="text" id="editProdBarcode"></div>
+            
+            <!-- تعديل حقل الباركود عشان ينزل سطر براحته -->
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-weight: bold; font-size: 15px; color: var(--text-white); margin-bottom: 8px;">الباركود / الكود:</label>
+                <div class="barcode-input-group" style="width: 100%;">
+                    <input type="text" id="editProdBarcode" placeholder="الكود الحالي أو صور الجديد" style="flex: 1; padding: 10px; border-radius: 12px; border: 2px solid var(--neon-border); background: rgba(19, 17, 44, 0.6); color: white;">
+                    <button onclick="startBarcodeScan('editProdBarcode')" title="تصوير الباركود" style="padding: 0 15px;">📷</button>
+                </div>
+            </div>
+
             <div class="btn-group">
                 <button class="cancel-btn" onclick="document.getElementById('editProductModal').style.display='none'">إلغاء</button>
                 <button class="confirm-btn" onclick="confirmEditProduct()">تحديث</button>
@@ -438,6 +465,14 @@
                 <button class="cancel-btn" onclick="document.getElementById('bulkUpdateModal').style.display='none'">إلغاء</button>
                 <button class="confirm-btn" onclick="applyBulkPriceUpdate()">تطبيق التعديل</button>
             </div>
+        </div>
+    </div>
+    <!-- نافذة قراءة الباركود (الكاميرا) -->
+    <div class="modal-overlay" id="scannerModal" style="display: none; z-index: 500;">
+        <div class="compact-modal" style="text-align: center; padding: 15px;">
+            <div class="compact-header"><h3 style="margin:0;">📷 توجيه الكاميرا للباركود</h3></div>
+            <div id="reader" style="width: 100%; border-radius: 10px; overflow: hidden; margin-top: 10px;"></div>
+            <button class="cancel-btn" style="width: 100%; margin-top: 15px; padding: 12px; font-weight: bold; border-radius: 10px;" onclick="stopBarcodeScan()">إغلاق الكاميرا</button>
         </div>
     </div>
     
@@ -1379,5 +1414,65 @@ function deleteCurrentProduct() {
             });
         }
     </script>
+<!-- ================= نظام قراءة الباركود (محدث بالكاميرا) ================= -->
+    <script>
+        let html5QrCode = null;
+        let currentBarcodeTargetId = '';
+
+        function startBarcodeScan(targetInputId) {
+            currentBarcodeTargetId = targetInputId;
+            document.getElementById('scannerModal').style.display = 'flex';
+            
+            setTimeout(() => {
+                if (html5QrCode) {
+                    html5QrCode.stop().then(() => { html5QrCode.clear(); startCamera(); }).catch(e => { startCamera(); });
+                } else {
+                    html5QrCode = new Html5Qrcode("reader");
+                    startCamera();
+                }
+            }, 100);
+        }
+
+        function startCamera() {
+            html5QrCode.start(
+                { facingMode: "environment" }, 
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 150 }
+                },
+                (decodedText, decodedResult) => {
+                    document.getElementById(currentBarcodeTargetId).value = decodedText;
+                    
+                    // تشغيل صوت تنبيه خفيف عند القراءة
+                    let beep = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'); 
+                    beep.play().catch(e => {});
+
+                    stopBarcodeScan();
+                },
+                (errorMessage) => {
+                    // تجاهل الأخطاء العابرة أثناء محاولة القراءة
+                }
+            ).catch((err) => {
+                console.error("Camera error:", err);
+                alert("يرجى التأكد من إعطاء صلاحية الكاميرا للمتصفح.");
+                document.getElementById('scannerModal').style.display = 'none';
+            });
+        }
+
+        function stopBarcodeScan() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                    html5QrCode = null;
+                    document.getElementById('scannerModal').style.display = 'none';
+                }).catch(err => {
+                    console.error("Stop error:", err);
+                    document.getElementById('scannerModal').style.display = 'none';
+                });
+            } else {
+                document.getElementById('scannerModal').style.display = 'none';
+            }
+        }
+    </script>    
 </body>
 </html>
