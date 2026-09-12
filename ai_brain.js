@@ -1,5 +1,5 @@
 // ==========================================
-// المحاسب الذكي - النسخة الآمنة والذكية
+// المحاسب الذكي - النسخة العملية للكاشير (وعي بالسياق)
 // ==========================================
 
 let isManagerMode = false;
@@ -31,6 +31,7 @@ function speakArabic(text) {
 }
 
 function buildAIBrainUI() {
+    // رسم الشاشة والزرار
     const style = document.createElement('style');
     style.innerHTML = `
         #ai-fab { position: fixed; bottom: 80px; left: 20px; width: 60px; height: 60px; background: #1e3a8a; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 15px rgba(37,99,235,0.5); z-index: 9999; border: 2px solid #3b82f6; transition: transform 0.2s; }
@@ -74,16 +75,10 @@ function buildAIBrainUI() {
         <div id="ai-fab" title="المحاسب الذكي">${robotSvg}</div>
         <div id="ai-chat-window">
             <div id="ai-header">
-                <span style="font-weight:bold; font-size: 16px;">المحاسب الذكي</span>
+                <span style="font-weight:bold; font-size: 16px;">المساعد الذكي</span>
                 <div id="ai-toggle-container">
                     <button id="ai-speaker-btn" style="background:none; border:none; font-size:20px; cursor:pointer; padding:0;" title="تشغيل/إيقاف الصوت">🔊</button>
                     <button id="ai-clear-btn" style="background:none; border:none; font-size:18px; cursor:pointer; padding:0;" title="مسح المحادثة">🗑️</button>
-                    <span>عام</span>
-                    <label class="switch" title="تبديل بين وضع البائع ووضع المدير">
-                        <input type="checkbox" id="ai-mode-toggle">
-                        <span class="slider"></span>
-                    </label>
-                    <span style="color: #fde68a;">مدير</span>
                 </div>
             </div>
             <div id="ai-messages"></div>
@@ -122,26 +117,13 @@ function buildAIBrainUI() {
         if(confirm("هل تريد مسح سجل المحادثة؟")) {
             localStorage.removeItem('seraj_ai_chat_history');
             document.getElementById('ai-messages').innerHTML = '';
-            addMessage('bot', 'أهلاً بك يا بشمهندس هاني! أنا جاهز أسمعك 🎤 (نسخة الحماية 🔒).', null, false);
+            addMessage('bot', 'مرحباً! كيف يمكنني مساعدتك اليوم؟', null, false);
         }
     });
 
-    document.getElementById('ai-mode-toggle').addEventListener('change', (e) => {
-        isManagerMode = e.target.checked;
-        addMessage('bot', isManagerMode ? '🔒 تم التبديل لوضع **المدير المالي** (جميع الأسعار الحقيقية مكشوفة).' : '🤝 تم التبديل لـ **الوضع العام** (تطبيق الحماية 10% أو 15%).');
-    });
-
-    document.getElementById('ai-send-btn').addEventListener('click', () => {
-        unlockAudio(); 
-        sendMessage();
-    });
-    
+    document.getElementById('ai-send-btn').addEventListener('click', () => { unlockAudio(); sendMessage(); });
     document.getElementById('ai-input').addEventListener('keydown', (e) => { 
-        if(e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            unlockAudio(); 
-            sendMessage();
-        } 
+        if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); unlockAudio(); sendMessage(); } 
     });
     
     document.getElementById('ai-camera-btn').addEventListener('click', () => document.getElementById('ai-camera-input').click());
@@ -157,10 +139,10 @@ function loadSavedHistory() {
             let history = JSON.parse(saved);
             history.forEach(m => addMessage(m.sender, m.text, m.imgSrc, false));
         } catch(e) {
-            addMessage('bot', 'أهلاً بك يا بشمهندس هاني! أنا جاهز أسمعك 🎤 (نسخة الحماية 🔒).', null, false);
+            addMessage('bot', 'مرحباً! أنا المساعد الذكي لسراج.', null, false);
         }
     } else {
-        addMessage('bot', 'أهلاً بك يا بشمهندس هاني! أنا جاهز أسمعك 🎤 (نسخة الحماية 🔒).', null, false);
+        addMessage('bot', 'مرحباً! أنا المساعد الذكي لسراج.', null, false);
     }
 }
 
@@ -219,9 +201,6 @@ function smartFilterText(rawText) {
     return text.trim();
 }
 
-// ----------------------------------------------------
-// لوب إعادة فتح المايك الإجباري و تجاهل إيرور السكوت
-// ----------------------------------------------------
 function setupMic() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { document.getElementById('ai-mic-btn').style.display = 'none'; return; }
@@ -235,7 +214,7 @@ function setupMic() {
         unlockAudio(); 
         isRecording = true;
         document.getElementById('ai-mic-btn').classList.add('mic-active'); 
-        document.getElementById('ai-input').placeholder = 'اتكلم براحتك.. أنا بسجل كل حاجة 🔴'; 
+        document.getElementById('ai-input').placeholder = 'اتكلم براحتك.. أنا بسجل 🔴'; 
         if(isAudioEnabled) window.speechSynthesis.cancel(); 
     };
     
@@ -249,11 +228,8 @@ function setupMic() {
     
     recognition.onend = () => { 
         if (!manualMicStop) {
-            // الموبايل هيفصل، الكود هيستنى 50 ملي ثانية ويفتح المايك تاني غصب عنه!
             setTimeout(() => {
-                if(!manualMicStop) {
-                    try { recognition.start(); } catch(e) {}
-                }
+                if(!manualMicStop) { try { recognition.start(); } catch(e) {} }
             }, 50); 
         } else {
             isRecording = false;
@@ -262,66 +238,60 @@ function setupMic() {
         }
     };
 
-    // تجاهل إيرور "لا يوجد صوت" عشان ميكسرش اللوب
-    recognition.onerror = (e) => {
-        if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
-            manualMicStop = true; 
-        }
-    };
+    recognition.onerror = (e) => { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { manualMicStop = true; } };
     
     document.getElementById('ai-mic-btn').addEventListener('click', () => {
-        if (isRecording) { 
-            manualMicStop = true; 
-            recognition.stop(); 
-        } else { 
-            manualMicStop = false;
-            unlockAudio();
-            try { recognition.start(); } catch(e) {}
-        }
+        if (isRecording) { manualMicStop = true; recognition.stop(); } 
+        else { manualMicStop = false; unlockAudio(); try { recognition.start(); } catch(e) {} }
     });
 }
 
-// ----------------------------------------------------
-// الغرفة النظيفة (حذف أي مصطلحات إنجليزية وتعريب البيانات تماماً)
-// ----------------------------------------------------
-function getSafeShopData() {
-    let originalProducts = DB.getProducts() || [];
+// ==========================================
+// قلب وعقل الذكاء الاصطناعي (تحليل السياق حسب الصفحة)
+// ==========================================
+function getContextAwareData() {
+    let currentUrl = window.location.href;
+    let originalProducts = (typeof DB !== 'undefined') ? DB.getProducts() || [] : [];
     let safeData = {};
+    let systemInstruction = "";
 
-    if (isManagerMode) {
-        // المدير بيتبعتله الداتا الأصلية كاملة بدون أي تعديل
+    if (currentUrl.includes('sales.html')) {
+        // --- وضع البائع السريع (فاتورة المبيعات) ---
+        // نبعت أسماء الأصناف فقط عشان الرسالة تكون خفيفة جداً وترد في ثانية
+        let namesOnly = originalProducts.map(p => p.name);
+        safeData = { "الأصناف_المتاحة": namesOnly };
+        
+        systemInstruction = `أنت مساعد بائع كاشير في متجر سراج. 
+        مهمتك الوحيدة: فهم كلام العميل أو الصورة المرفقة، ومطابقتها مع "الأصناف_المتاحة" المعطاة لك.
+        رد بصيغة JSON فقط بهذا الشكل: [{"n": "اسم الصنف الدقيق من المخزن", "q": العدد}].
+        لا تضف أي نص آخر مع الـ JSON.`;
+
+    } else if (currentUrl.includes('purchases.html')) {
+        // --- وضع أمين المخزن (فاتورة المشتريات) ---
+        // نبعت أسماء الأصناف فقط برضه لسرعة الإدراج
+        let namesOnly = originalProducts.map(p => p.name);
+        safeData = { "الأصناف_المعروفة": namesOnly };
+
+        systemInstruction = `أنت مسؤول مشتريات في متجر سراج.
+        مهمتك استخراج الأصناف من الفاتورة أو الكلام. إذا كان الصنف غير موجود في "الأصناف_المعروفة"، اكتب اسمه كما فهمته لنقوم بإضافته.
+        رد بصيغة JSON فقط بهذا الشكل: [{"n": "اسم الصنف", "q": العدد}].
+        لا تضف أي نص آخر مع الـ JSON.`;
+
+    } else {
+        // --- وضع المدير المالي (الصفحة الرئيسية وباقي الصفحات) ---
+        // هنا نبعت الداتا الكاملة للتحليل العميق
         safeData = {
             products: originalProducts,
-            customers: DB.getCustomers(),
-            vaults: DB.getVaults(),
-            suppliers: DB.getSuppliers()
+            customers: (typeof DB !== 'undefined') ? DB.getCustomers() : [],
+            vaults: (typeof DB !== 'undefined') ? DB.getVaults() : []
         };
-    } else {
-        // البائع بيتبعتله قاموس "عربي فقط" مفيش فيه كلمة PurchasePrice خالص
-        let cleanProducts = [];
-        
-        originalProducts.forEach(p => {
-            let realCost = parseFloat(p.purchasePrice) || 0;
-            if (p.lots && p.lots.length > 0) {
-                realCost = parseFloat(p.lots[p.lots.length - 1].purchasePrice) || realCost;
-            }
-            
-            // القاعدة الذهبية للحماية:
-            let markup = realCost < 100 ? 1.15 : 1.10;
-            let fakeCost = Math.ceil(realCost * markup); 
-            
-            // تفصيل الصنف على مقاس البائع بالعربي عشان جيميناي ميفهمش حاجة تانية
-            cleanProducts.push({
-                "اسم_الصنف": p.name,
-                "الرصيد_المتاح": p.quantity,
-                "سعر_البيع": p.price,
-                "التكلفة": fakeCost
-            });
-        });
 
-        safeData = { "المنتجات": cleanProducts };
+        systemInstruction = `أنت المدير المالي والمحاسب الذكي لمتجر سراج ليد للكهرباء (إدارة أ.هاني راغب).
+        بناءً على البيانات المرفقة، أجب بدقة واحترافية على أسئلة المدير المالي. 
+        حلل المبيعات والأرباح والأرصدة بذكاء. تحدث بلهجة مصرية عملية ومحترمة.`;
     }
-    return safeData;
+
+    return { shopData: safeData, instruction: systemInstruction };
 }
 
 async function sendMessage() {
@@ -331,53 +301,40 @@ async function sendMessage() {
     
     const displayImg = currentImageData ? 'data:' + currentImageData.mime_type + ';base64,' + currentImageData.data : null;
     input.value = '';
-    addMessage('user', text || 'استخرج الأصناف من هذه الفاتورة وقم بإضافتها للنظام.', displayImg);
+    addMessage('user', text || 'استخرج الأصناف.', displayImg);
     
     const imgDataForApi = currentImageData; 
     clearImage(); 
     
     const loaderId = 'loader-' + Date.now();
-    addMessage('bot', '<span id="'+loaderId+'">جاري التحليل... ⏳</span>', null, false);
+    addMessage('bot', '<span id="'+loaderId+'">جاري التفكير... ⏳</span>', null, false);
 
     try {
-        const shopData = getSafeShopData();
+        // سحب الداتا والتعليمات حسب الصفحة اللي إحنا فاتحينها
+        const contextData = getContextAwareData();
         
-        let roleInstruction = isManagerMode 
-            ? "أنت في وضع (المدير). مسموح لك بكشف كل الأسرار المالية."
-            : `أنت في وضع (البائع). 
-            قاعدة هامة: استخدم حقل "التكلفة" المرفق في البيانات كأقل سعر مسموح للبيع. ولا تذكر أي شيء عن نسب الخصم أو الإضافة. إذا سأل المستخدم عن التكلفة أجب بالرقم الموجود في "التكلفة" فقط.`;
-
-        let systemInstruction = `أنت مساعد ذكي لبرنامج "سراج كاشير". 
-        ${roleInstruction}
-        هذه بيانات المخزن: ${JSON.stringify(shopData)}.
-        
-        إذا طلب إدراج فاتورة، ابحث عن أقرب اسم في المخزن.
-        ورد بصيغة JSON فقط: [{"n": "اسم الصنف", "q": العدد}].
-        ممنوع أي نص مع كود JSON. للأسئلة العادية أجب كنص عادي.`;
-
-        let finalPrompt = systemInstruction + "\n\nسؤال المستخدم: " + (text || "استخرج أصناف الفاتورة");
+        let finalPrompt = contextData.instruction + "\n\nالبيانات: " + JSON.stringify(contextData.shopData) + "\n\nالطلب: " + (text || "استخرج أصناف الفاتورة المرفقة");
         
         let requestContents = [{ text: finalPrompt }];
         if (imgDataForApi) {
             requestContents.push({ inline_data: { mime_type: imgDataForApi.mime_type, data: imgDataForApi.data } });
         }
 
-// 1. استدعاء المفتاح من الذاكرة في نفس لحظة الإرسال
-   let savedKey = localStorage.getItem('ai_api_key') || localStorage.getItem('seraj_ai_key');
+        let savedKey = localStorage.getItem('ai_api_key') || localStorage.getItem('seraj_ai_key');
 
-        // 2. إيقاف الإرسال وتنبيه المستخدم إذا كان المفتاح غير موجود
         if (!savedKey || savedKey.trim() === "") {
-            let errorMsg = "❌ برجاء إدخال مفتاح الذكاء الاصطناعي من شاشة الإعدادات (الترس ⚙️) أولاً!";
+            let errorMsg = "❌ برجاء إدخال مفتاح الذكاء الاصطناعي من شاشة الإعدادات أولاً!";
             document.getElementById(loaderId).parentElement.innerHTML = errorMsg;
             saveHistory('bot', errorMsg, null);
             speakArabic("برجاء إدخال المفتاح من الإعدادات");
             return;
         }
 
-        // 3. تنظيف المفتاح وتجهيز الرابط
         const cleanKey = savedKey.replace(/[^a-zA-Z0-9_.\-]/g, ''); 
- const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=" + cleanKey;
-// 4. إرسال الطلب لجوجل
+        
+        // استخدام الموديل المستقر والسريع جداً (1.5 Flash) عشان ميجيبش مشغول أبداً
+        const finalUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + cleanKey;
+
         const response = await fetch(finalUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -387,52 +344,26 @@ async function sendMessage() {
         const data = await response.json();
 
         if (!response.ok) {
-            // التعديل: إظهار سبب الرفض الحقيقي من جوجل
             let googleReason = data.error ? data.error.message : "سبب غير معروف";
             let errorMsg = "❌ جوجل رفضت الطلب والسبب: <br><span style='color:red; font-size:12px;'>" + googleReason + "</span>";
-            console.error("تفاصيل الخطأ من جوجل:", data);
-            
             document.getElementById(loaderId).parentElement.innerHTML = errorMsg;
             saveHistory('bot', errorMsg, null);
-            speakArabic("جوجل رفضت الطلب، راجع الرسالة المكتوبة");
             return;
         }
+        
         const reply = data.candidates[0].content.parts[0].text;
         let messageBox = document.getElementById(loaderId).parentElement;
         
+        // معالجة الرد لو كان JSON (لإضافة الأصناف للفواتير)
         try {
             let jsonMatch = reply.match(/\[.*\]/s); 
             if (jsonMatch) { 
-let isPurchase = text.includes('شرا') || text.includes('مشتريات') || text.includes('مورد') || window.location.href.includes('purchase');
-let isStore = text.includes('مخزن') || text.includes('جرد') || text.includes('نواقص') || window.location.href.includes('store');
-let itemsArray = JSON.parse(jsonMatch[0]);
+                let isPurchase = window.location.href.includes('purchase');
+                let itemsArray = JSON.parse(jsonMatch[0]);
 
-if (isStore) {
-    let searchWords = itemsArray.map(item => item.n).join(' ');
-    if (window.location.href.includes('store')) {
-        let searchInput = document.getElementById('inventorySearch');
-        if (searchInput) {
-            searchInput.value = searchWords;
-            if (typeof renderInventoryTable === 'function') renderInventoryTable();
-        }
-        let msgTxt = `✅ تم تجهيز طابور الأصناف في المخزن!`;
-        messageBox.innerHTML = msgTxt;
-        saveHistory('bot', msgTxt, null);
-        speakArabic(`تم تجهيز الأصناف المطلوبة في طابور المخزن`);
-    } else {
-        sessionStorage.setItem('pendingAIStoreQueue', searchWords);
-        let finalMsg = "✅ جاري تحويلك للمخزن وتجهيز الطابور...";
-        messageBox.innerHTML = finalMsg;
-        saveHistory('bot', finalMsg, null);
-        speakArabic("جاري تحويلك لصفحة المخزن");
-        setTimeout(() => { window.location.href = "store.html"; }, 1500);
-    }
-    return;
-}
-                
-const insertItemsToInvoice = () => {
+                const insertItemsToInvoice = () => {
                     let successCount = 0;
-                    let localDB = DB.getProducts(); // الداتا الأصلية وقت الإدراج للفاتورة
+                    let localDB = (typeof DB !== 'undefined') ? DB.getProducts() : []; 
                     const cleanText = (txt) => txt.toString().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/[ىي]/g, 'ي').trim();
 
                     itemsArray.forEach(item => {
@@ -450,8 +381,6 @@ const insertItemsToInvoice = () => {
                             } else {
                                 let pPrice = (bestMatch.lots && bestMatch.lots.length > 0) ? bestMatch.lots[bestMatch.lots.length - 1].purchasePrice : (bestMatch.purchasePrice || 0);
                                 let sPrice = (bestMatch.lots && bestMatch.lots.length > 0) ? bestMatch.lots[bestMatch.lots.length - 1].price : (bestMatch.price || 0);
-                                
-                                // التصليح هنا: غيرنا الكلمة لـ price عشان الفاتورة تقرأ السعر صح
                                 invoice.unshift({ ...bestMatch, purchasePrice: pPrice, price: sPrice, qty: (parseFloat(item.q) || 1) });
                             }
                             successCount++;
@@ -461,32 +390,14 @@ const insertItemsToInvoice = () => {
                     if(typeof saveDraft === 'function') saveDraft();
                     if(typeof renderTable === 'function') renderTable();
 
-                    let msgTxt = `✅ تم نزول <b>${successCount}</b> صنف للفاتورة مباشرة!`;
+                    let msgTxt = `✅ تم إدراج <b>${successCount}</b> صنف بنجاح!`;
                     messageBox.innerHTML = msgTxt;
                     saveHistory('bot', msgTxt, null);
-                    speakArabic(`تم إضافة الأصناف للفاتورة بنجاح`);
+                    speakArabic(`تم الإضافة للفاتورة`);
                 };
 
-                if (isPurchase && !window.location.href.includes('purchase')) {
-                    sessionStorage.setItem('pendingAICart_purchase', jsonMatch[0]);
-                    let finalMsg = "✅ جاري تحويلك لصفحة فاتورة الشراء...";
-                    messageBox.innerHTML = finalMsg;
-                    saveHistory('bot', finalMsg, null);
-                    speakArabic("جاري تحويلك لصفحة المشتريات");
-                    setTimeout(() => { window.location.href = "purchases.html"; }, 1500);
-                    return; 
-                } else if (!isPurchase && !window.location.href.includes('sales') && !window.location.href.includes('index')) {
-                    sessionStorage.setItem('pendingAICart', jsonMatch[0]);
-                    let finalMsg = "✅ جاري تحويلك لصفحة المبيعات...";
-                    messageBox.innerHTML = finalMsg;
-                    saveHistory('bot', finalMsg, null);
-                    speakArabic("جاري تحويلك لصفحة المبيعات");
-                    setTimeout(() => { window.location.href = "sales.html"; }, 1500);
-                    return; 
-                } else {
-                    insertItemsToInvoice();
-                    return;
-                }
+                insertItemsToInvoice();
+                return;
             }
         } catch (e) { console.log("الرد نص عادي", e); }
 
@@ -496,24 +407,22 @@ const insertItemsToInvoice = () => {
         
     } catch(err) {
         console.error("AI Error: ", err);
-        let errorMsg = "❌ عذراً، هناك مشكلة في الاتصال.";
+        let errorMsg = "❌ عذراً، هناك مشكلة في الاتصال بالسيرفر.";
         document.getElementById(loaderId).parentElement.innerHTML = errorMsg;
         saveHistory('bot', errorMsg, null);
-        speakArabic("عذراً، حدثت مشكلة في الاتصال");
     }
 }
 
+// بمجرد تحميل الصفحة، ابني واجهة الذكاء الاصطناعي
 window.addEventListener('load', buildAIBrainUI);
 
 window.addEventListener('load', () => {
     let pSales = sessionStorage.getItem('pendingAICart');
     let pPurchases = sessionStorage.getItem('pendingAICart_purchase');
-let pStore = sessionStorage.getItem('pendingAIStoreQueue');
     
-const insertItems = (dataStr) => {
+    const insertItems = (dataStr) => {
         let itemsArray = JSON.parse(dataStr);
-        let successCount = 0;
-        let localDB = DB.getProducts(); 
+        let localDB = (typeof DB !== 'undefined') ? DB.getProducts() : []; 
         const cleanText = (txt) => txt.toString().replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه').replace(/[ىي]/g, 'ي').trim();
 
         itemsArray.forEach(item => {
@@ -531,17 +440,13 @@ const insertItems = (dataStr) => {
                 } else {
                     let pPrice = (bestMatch.lots && bestMatch.lots.length > 0) ? bestMatch.lots[bestMatch.lots.length - 1].purchasePrice : (bestMatch.purchasePrice || 0);
                     let sPrice = (bestMatch.lots && bestMatch.lots.length > 0) ? bestMatch.lots[bestMatch.lots.length - 1].price : (bestMatch.price || 0);
-                    
-                    // التصليح هنا كمان
                     invoice.unshift({ ...bestMatch, purchasePrice: pPrice, price: sPrice, qty: (parseFloat(item.q) || 1) });
                 }
-                successCount++;
             }
         });
         
         if(typeof saveDraft === 'function') saveDraft();
         if(typeof renderTable === 'function') renderTable();
-        speakArabic(`تم إدراج الأصناف بنجاح`);
     };
 
     if (pSales && typeof searchProducts === 'function') {
@@ -553,13 +458,4 @@ const insertItems = (dataStr) => {
         insertItems(pPurchases);
         sessionStorage.removeItem('pendingAICart_purchase');
     }
-    if (pStore && window.location.href.includes('store')) {
-    let searchInput = document.getElementById('inventorySearch');
-    if(searchInput) {
-        searchInput.value = pStore;
-        if(typeof renderInventoryTable === 'function') renderInventoryTable();
-    }
-    sessionStorage.removeItem('pendingAIStoreQueue');
-    speakArabic("تم تجهيز الطابور بنجاح");
-}
 });
